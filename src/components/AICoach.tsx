@@ -90,7 +90,7 @@ FORMATTING (CRITICAL):
       });
 
       const result = await chat.sendMessage({
-        message: userMsg
+        message: finalMsg
       });
       
       const text = result.text;
