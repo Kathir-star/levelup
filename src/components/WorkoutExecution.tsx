@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { MuscleGroup, Exercise } from '../types';
 import { cn } from '../lib/utils';
-import { Play, Pause, RotateCcw, X, CheckCircle2, Flame } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, CheckCircle2, Flame, Trophy, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CircularTimer from './common/CircularTimer';
 import { MOTIVATIONAL_MESSAGES, TAMIL_MOTIVATIONAL_MESSAGES } from '../constants';
+import confetti from 'canvas-confetti';
 
 interface WorkoutExecutionProps {
   muscle: MuscleGroup;
@@ -23,6 +24,8 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
   const isTamil = document.documentElement.dataset.tamil === 'true';
   const messages = isTamil ? TAMIL_MOTIVATIONAL_MESSAGES : MOTIVATIONAL_MESSAGES;
   const [message, setMessage] = useState(messages[0]);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [showSetPulse, setShowSetPulse] = useState(false);
 
   // Main Timer Loop
   useEffect(() => {
@@ -41,11 +44,37 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
 
   const nextSet = () => {
     if (currentSet < totalSets) {
+      // Trigger set completion pulse
+      setShowSetPulse(true);
+      setTimeout(() => setShowSetPulse(false), 600);
+      
+      if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+
       setCurrentSet(prev => prev + 1);
-      setIsActive(false);
+      setIsActive(true); // Auto-trigger rest
     } else {
-      onComplete(duration);
+      handleSessionFinish();
     }
+  };
+
+  const handleSessionFinish = () => {
+    setIsFinishing(true);
+    
+    // Celebration Confetti
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff3b3b', '#ffd700', '#ffffff'],
+      ticks: 300
+    });
+
+    if (navigator.vibrate) navigator.vibrate([50, 100, 50, 100, 50]);
+
+    // Give user time to see the celebration
+    setTimeout(() => {
+      onComplete(duration);
+    }, 3000);
   };
 
   const formatTime = (s: number) => {
@@ -56,7 +85,65 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
 
   return (
     <div className="fixed inset-0 bg-[var(--bg)] z-[200] flex flex-col p-6 animate-in fade-in zoom-in-95 duration-300">
-      <div className="flex items-center justify-between mb-8">
+      {/* Background Pulse Effect for Set Completion */}
+      <AnimatePresence>
+        {showSetPulse && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.3, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[var(--accent)] pointer-events-none z-[10]"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Session Finish Overlay */}
+      <AnimatePresence>
+        {isFinishing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[500] bg-black/95 flex flex-col items-center justify-center text-center p-8 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.5, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", damping: 12 }}
+              className="w-32 h-32 bg-[var(--yellow)] rounded-full flex items-center justify-center text-black mb-8 shadow-[0_0_50px_rgba(255,215,0,0.4)]"
+            >
+              <Trophy size={64} />
+            </motion.div>
+            <motion.h1 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-4xl font-black uppercase tracking-tighter text-white italic mb-2"
+            >
+              Session Complete
+            </motion.h1>
+            <motion.p 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-[var(--accent)] font-bold uppercase tracking-[0.3em] text-sm"
+            >
+              Beast Mode Activated 😈
+            </motion.p>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1 }}
+              className="mt-12 flex items-center gap-2 text-white/40 text-[10px] font-black uppercase tracking-widest"
+            >
+              <Star size={12} className="animate-spin duration-3000" />
+              Saving your progress...
+              <Star size={12} className="animate-spin duration-3000" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between mb-8 relative z-20">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-[var(--red)] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[var(--red)]/20 animate-pulse">
             <Flame size={24} />
@@ -71,7 +158,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         </button>
       </div>
 
-      <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-12 overflow-hidden">
+      <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-12 overflow-hidden relative z-20">
         <motion.div 
           className="h-full bg-[var(--red)]"
           initial={{ width: 0 }}
@@ -80,8 +167,11 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center space-y-12">
-        <div className="w-full max-w-md aspect-video bg-[var(--card)] rounded-3xl border border-[var(--border)] flex flex-col items-center justify-center relative overflow-hidden shadow-2xl group transition-transform hover:scale-[1.02]">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-12 relative z-20">
+        <motion.div 
+          animate={showSetPulse ? { scale: [1, 1.05, 1], rotate: [0, 1, 0, -1, 0] } : {}}
+          className="w-full max-w-md aspect-video bg-[var(--card)] rounded-3xl border border-[var(--border)] flex flex-col items-center justify-center relative overflow-hidden shadow-2xl group transition-transform hover:scale-[1.02]"
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
           <div className="z-10 text-center p-6">
             <div className="text-7xl mb-4 group-hover:rotate-12 transition-transform duration-500">🏋️</div>
@@ -102,7 +192,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
               </span>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
 
         <div className="flex items-center gap-8">
             <button 
@@ -124,7 +214,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         </div>
       </div>
 
-      <div className="mt-auto pt-8 border-t border-[var(--border)] flex justify-between items-end">
+      <div className="mt-auto pt-8 border-t border-[var(--border)] flex justify-between items-end relative z-20">
         <div className="space-y-1">
           <div className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Session Timer</div>
           <div className="text-3xl font-black tracking-tighter tabular-nums">{formatTime(duration)}</div>
@@ -141,7 +231,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
       </div>
 
       <AnimatePresence>
-        {isActive && (
+        {isActive && !isFinishing && (
             <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6">
                 <CircularTimer 
                     initialSeconds={maxTime}

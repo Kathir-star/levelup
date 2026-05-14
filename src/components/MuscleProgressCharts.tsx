@@ -5,9 +5,10 @@ import { TrendingUp, Award, BarChart3 } from 'lucide-react';
 
 interface MuscleProgressChartsProps {
   data: Record<string, WorkoutEntry[]>;
+  prs: Record<string, { weight: number, reps: number, date: string }>;
 }
 
-export default function MuscleProgressCharts({ data }: MuscleProgressChartsProps) {
+export default function MuscleProgressCharts({ data, prs }: MuscleProgressChartsProps) {
   const allEntries = useMemo(() => Object.values(data).flat(), [data]);
 
   const muscleStats = useMemo(() => {

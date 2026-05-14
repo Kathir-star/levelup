@@ -8,12 +8,14 @@ import { QUOTES, TAMIL_QUOTES } from "../../constants";
 
 const WORKOUT_QUOTES: Record<string, string[]> = {
   legs: [
+    "Skipping legs? Weak.",
+    "You either squat… or you stay small.",
     "Leg day is war. Survivors become legends 😈",
     "If you can walk after leg day, you didn’t train hard enough.",
-    "Leg pain today, power tomorrow.",
-    "Real strength is built from the ground up."
+    "Leg pain today, power tomorrow."
   ],
   push: [
+    "Push till failure 💪",
     "Push beyond limits. That’s where growth begins.",
     "Chest day = confidence day.",
     "Every push builds power."

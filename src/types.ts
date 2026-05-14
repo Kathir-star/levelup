@@ -27,6 +27,7 @@ export interface WeeklyPlan {
 
 export interface WorkoutEntry {
   muscle: MuscleGroup;
+  exerciseName?: string;
   weight: number;
   reps: number;
   sets: number;
@@ -34,6 +35,7 @@ export interface WorkoutEntry {
   time: string;
   date: string;
   timestamp?: any;
+  isPR?: boolean;
 }
 
 export interface UserProfile {
@@ -52,6 +54,13 @@ export interface PR {
   weight: number;
   reps: number;
   date: string;
+}
+
+export interface DailyMission {
+  id: string;
+  text: string;
+  completed: boolean;
+  xpReward: number;
 }
 
 export interface SleepEntry {

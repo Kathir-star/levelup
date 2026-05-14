@@ -4,9 +4,9 @@ import MoodTracker from './wellness/MoodTracker';
 import BreathingExercise from './wellness/BreathingExercise';
 import WaterTracker from './WaterTracker';
 import SleepTracker from './SleepTracker';
-import { WorkoutEntry, UserProfile } from '../types';
+import { WorkoutEntry, UserProfile, DailyMission } from '../types';
 import { cn } from '../lib/utils';
-import { ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target, CheckCircle2 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, AreaChart, Area, Cell 
@@ -18,11 +18,13 @@ interface DashboardProps {
   steps: Record<string, number>;
   water: number;
   waterGoal: number;
+  missions: DailyMission[];
+  completeMission: (id: string, text: string, xpReward: number) => void;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-export default function Dashboard({ data, profile, steps, water, waterGoal }: DashboardProps) {
+export default function Dashboard({ data, profile, steps, water, waterGoal, missions, completeMission }: DashboardProps) {
   const [calOffset, setCalOffset] = useState(0);
   const [calories, setCalories] = useState(0);
   const [workoutTime, setWorkoutTime] = useState(0);
@@ -40,9 +42,9 @@ export default function Dashboard({ data, profile, steps, water, waterGoal }: Da
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const level = Math.floor(xp / 1000) + 1;
-  const xpInLevel = xp % 1000;
-  const progressToNextLevel = (xpInLevel / 1000) * 100;
+  const level = Math.floor(xp / 100) + 1;
+  const xpInLevel = xp % 100;
+  const progressToNextLevel = (xpInLevel / 100) * 100;
 
   const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
@@ -149,7 +151,7 @@ export default function Dashboard({ data, profile, steps, water, waterGoal }: Da
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-black italic text-[var(--accent)]">{1000 - xpInLevel} XP</div>
+            <div className="text-2xl font-black italic text-[var(--accent)]">{100 - xpInLevel} XP</div>
             <p className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">To Level {level + 1}</p>
           </div>
         </div>
@@ -163,6 +165,36 @@ export default function Dashboard({ data, profile, steps, water, waterGoal }: Da
 
       {/* Motivation Header */}
       <DailyMotivation workoutType={currentWorkoutType as any} />
+
+      {/* Daily Missions */}
+      <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+         <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all pointer-events-none" />
+         <div className="flex items-center justify-between mb-6">
+            <h3 className="tab-heading flex items-center gap-2">
+               <Target size={16} className="text-[var(--accent)]" />
+               Daily Missions
+            </h3>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Gain XP</span>
+         </div>
+         <div className="flex flex-col gap-3">
+            {missions.map(mission => (
+               <div key={mission.id} className={cn("flex justify-between items-center p-4 rounded-2xl border transition-all", mission.completed ? "bg-[var(--accent)]/10 border-[var(--accent)]/30" : "bg-[var(--sub)] border-[var(--border)] hover:border-[var(--muted)]")}>
+                  <div className="flex items-center gap-3">
+                     <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", mission.completed ? "bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]" : "bg-black/20 text-[var(--muted)]")}>
+                        {mission.completed ? <CheckCircle2 size={16} /> : <div className="w-2 h-2 rounded-full bg-[var(--muted)]" />}
+                     </div>
+                     <span className={cn("text-sm font-bold", mission.completed ? "text-white line-through opacity-70" : "text-white")}>{mission.text}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">+{mission.xpReward} XP</span>
+                     {!mission.completed && (
+                        <button onClick={() => completeMission(mission.id, mission.text, mission.xpReward)} className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Claim</button>
+                     )}
+                  </div>
+               </div>
+            ))}
+         </div>
+      </div>
 
       {/* Wellness Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -241,9 +273,12 @@ export default function Dashboard({ data, profile, steps, water, waterGoal }: Da
       </div>
 
       {/* Live Data Chain Section */}
-      {loggedDays.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="tab-heading text-white">🔗 Live Data Chain</h3>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+           <h3 className="tab-heading text-white">🔗 Live Data Chain</h3>
+           <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] animate-pulse shadow-[0_0_10px_var(--accent-glow)]">🔥 82% Users Trained Today</span>
+        </div>
+        {loggedDays.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {loggedDays.map((d, i) => {
               const entries = data[d];
@@ -260,8 +295,10 @@ export default function Dashboard({ data, profile, steps, water, waterGoal }: Da
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center p-6 border border-dashed border-[var(--border)] rounded-2xl text-[var(--muted)] text-xs font-bold uppercase tracking-widest">No links in chain yet. Start training!</div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="glass-card p-8">
