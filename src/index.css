@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bebas Neue", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Barlow", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-red: #e50914;
+  --color-yellow: #ffcc00;
+  --color-green: #1db954;
+  --color-blue: #1e90ff;
+  --color-bg: #000000;
+  --color-card: rgba(17, 17, 17, 0.9);
+  --color-card2: #181818;
+  --color-muted: #777;
+  --color-text: #fff;
+  --color-border: #222;
+  --color-input-bg: #0d0d0d;
+  --color-sub: #161616;
+}
+
+@layer base {
+  :root {
+    --red: #e50914;
+    --yellow: #ffcc00;
+    --green: #1db954;
+    --blue: #1e90ff;
+    --bg: #000000;
+    --card: rgba(17, 17, 17, 0.9);
+    --card-hover: rgba(26, 26, 26, 0.95);
+    --card2: #181818;
+    --muted: #777;
+    --text: #fff;
+    --border: #222;
+    --input-bg: #0d0d0d;
+    --sub: #161616;
+    --accent: var(--red);
+    --accent-glow: rgba(229, 9, 20, 0.3);
+  }
+
+  [data-gender="female"] {
+    --accent: #ff69b4;
+    --accent-glow: rgba(255, 105, 180, 0.3);
+    --red: #ff69b4;
+  }
+
+  [data-theme="light"] {
+    --red: #c0000c;
+    --yellow: #d4a000;
+    --green: #15a045;
+    --blue: #1070dd;
+    --bg: #f0f0f0;
+    --card: rgba(255, 255, 255, 0.9);
+    --card-hover: rgba(250, 250, 250, 0.95);
+    --card2: #fafafa;
+    --muted: #666;
+    --text: #111;
+    --border: #ddd;
+    --input-bg: #f5f5f5;
+    --sub: #eee;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .glass {
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    background-color: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .glass-card {
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    transform: translateY(-0.25rem);
+    background-color: var(--card-hover);
+    border-color: var(--accent);
+    box-shadow: 0 15px 40px -10px var(--accent-glow);
+  }
+
+  .tab-heading {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 1.25rem;
+    color: var(--accent);
+  }
+
+  .active-glow {
+    box-shadow: 0 0 20px var(--accent-glow);
+    border-color: var(--accent) !important;
+  }
+
+  /* Tamil Mode Mass Styling */
+  [data-tamil="true"] h1,
+  [data-tamil="true"] h2,
+  [data-tamil="true"] .font-display,
+  [data-tamil="true"] .tab-heading {
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    font-style: italic;
+    text-transform: uppercase;
+  }
+
+  [data-tamil="true"] h1,
+  [data-tamil="true"] h2 {
+    text-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+  /* Markdown Styles for AICoach */
+  .markdown-body {
+    @apply text-[var(--text)] text-sm;
+  }
+  .markdown-body p {
+    @apply mb-4;
+  }
+  .markdown-body strong {
+    @apply font-bold text-[var(--accent)];
+  }
+  .markdown-body ul {
+    @apply list-disc list-inside mb-4 pl-2;
+  }
+  .markdown-body ol {
+    @apply list-decimal list-inside mb-4 pl-2;
+  }
+  .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+    @apply font-bold mt-6 mb-3 text-[var(--accent)] font-display uppercase tracking-wide;
+  }
+  .markdown-body table {
+    @apply w-full text-left border-collapse my-5 bg-[var(--card2)] rounded-lg overflow-hidden border border-[var(--border)];
+  }
+  .markdown-body thead {
+    @apply bg-[var(--border)] text-[var(--text)] font-semibold uppercase text-xs tracking-wider;
+  }
+  .markdown-body th, .markdown-body td {
+    @apply p-3 border-b border-[var(--border)];
+  }
+  .markdown-body tr:last-child td {
+    @apply border-b-0;
+  }
+  .markdown-body tbody tr:hover {
+    @apply bg-black/20;
+  }
+  .markdown-body blockquote {
+    @apply border-l-4 border-[var(--accent)] pl-4 italic text-[var(--muted)] my-4;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

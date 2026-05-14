@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User's personal information and fitness goals",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "weight": { "type": "number" },
+        "height": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "goal": { "type": "string", "enum": ["loss", "maintain", "gain"] },
+        "level": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "WorkoutEntry": {
+      "title": "WorkoutEntry",
+      "description": "A single logged workout exercise",
+      "type": "object",
+      "properties": {
+        "muscle": { "type": "string" },
+        "weight": { "type": "number" },
+        "reps": { "type": "number" },
+        "sets": { "type": "number" },
+        "notes": { "type": "string" },
+        "time": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["muscle", "weight", "reps", "sets", "date"]
+    },
+    "StepData": {
+      "title": "StepData",
+      "description": "Daily step count",
+      "type": "object",
+      "properties": {
+        "count": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["count", "date"]
+    },
+    "WaterData": {
+      "title": "WaterData",
+      "description": "Daily water intake",
+      "type": "object",
+      "properties": {
+        "count": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["count", "date"]
+    },
+    "PR": {
+      "title": "PR",
+      "description": "Personal Record for a muscle group",
+      "type": "object",
+      "properties": {
+        "weight": { "type": "number" },
+        "reps": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["weight", "reps", "date"]
+    },
+    "SleepEntry": {
+      "title": "SleepEntry",
+      "description": "Daily sleep log",
+      "type": "object",
+      "properties": {
+        "hours": { "type": "number" },
+        "quality": { "type": "string", "enum": ["Poor", "Average", "Good"] },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["hours", "quality", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/workouts/{workoutId}": {
+      "schema": "WorkoutEntry",
+      "description": "Collection of workout entries for a user"
+    },
+    "/users/{userId}/steps/{date}": {
+      "schema": "StepData",
+      "description": "Daily step counts for a user"
+    },
+    "/users/{userId}/water/{date}": {
+      "schema": "WaterData",
+      "description": "Daily water intake for a user"
+    },
+    "/users/{userId}/prs/{muscle}": {
+      "schema": "PR",
+      "description": "Personal records per muscle group"
+    },
+    "/users/{userId}/sleep/{date}": {
+      "schema": "SleepEntry",
+      "description": "Daily sleep logs for a user"
+    }
+  }
+}

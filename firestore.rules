@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Fields:
+    //   - name: string (required)
+    //   - age: number (optional)
+    //   - weight: number (optional)
+    //   - height: number (optional)
+    //   - gender: string (optional, enum: male, female)
+    //   - goal: string (optional, enum: loss, maintain, gain)
+    //   - experience: string (optional, enum: beginner, intermediate, advanced)
+    //   - updatedAt: timestamp (optional)
+    //
+    // Collection: /users/{userId}/workouts/{workoutId}
+    // Fields:
+    //   - muscle: string (required)
+    //   - weight: number (required)
+    //   - reps: number (required)
+    //   - sets: number (required)
+    //   - notes: string (optional)
+    //   - time: string (optional)
+    //   - date: string (required, format: YYYY-MM-DD)
+    //   - timestamp: timestamp (optional)
+    //
+    // Collection: /users/{userId}/steps/{date}
+    // Fields:
+    //   - count: number (required)
+    //   - date: string (required)
+    //
+    // Collection: /users/{userId}/water/{date}
+    // Fields:
+    //   - count: number (required)
+    //   - date: string (required)
+    //
+    // Collection: /users/{userId}/prs/{muscle}
+    // Fields:
+    //   - weight: number (required)
+    //   - reps: number (required)
+    //   - date: string (required)
+    //
+    // Collection: /users/{userId}/sleep/{date}
+    // Fields:
+    //   - hours: number (required)
+    //   - quality: string (required, enum: Poor, Average, Good)
+    //   - date: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+         (request.auth.token.email == "kathiruu.gym07@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUserProfile(data) {
+      return (data.name is string && data.name.size() > 0 && data.name.size() < 100) &&
+             (!('age' in data) || (data.age is number && data.age > 0 && data.age < 150)) &&
+             (!('weight' in data) || (data.weight is number && data.weight > 0 && data.weight < 500)) &&
+             (!('height' in data) || (data.height is number && data.height > 0 && data.height < 300)) &&
+             (!('gender' in data) || data.gender in ['male', 'female']) &&
+             (!('goal' in data) || data.goal in ['loss', 'maintain', 'gain']) &&
+             (!('level' in data) || data.level in ['beginner', 'intermediate', 'advanced']) &&
+             (!('role' in data) || data.role in ['user', 'admin']);
+    }
+
+    function isValidWorkoutEntry(data) {
+      return (data.muscle is string && data.muscle.size() > 0) &&
+             (data.weight is number && data.weight >= 0) &&
+             (data.reps is number && data.reps >= 0) &&
+             (data.sets is number && data.sets >= 0) &&
+             isValidDateString(data.date) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 1000));
+    }
+
+    function isValidStepData(data) {
+      return (data.count is number && data.count >= 0) &&
+             isValidDateString(data.date);
+    }
+
+    function isValidWaterData(data) {
+      return (data.count is number && data.count >= 0) &&
+             isValidDateString(data.date);
+    }
+
+    function isValidPR(data) {
+      return (data.weight is number && data.weight >= 0) &&
+             (data.reps is number && data.reps >= 0) &&
+             isValidDateString(data.date);
+    }
+
+    function isValidSleepData(data) {
+      return (data.hours is number && data.hours >= 0) &&
+             (data.quality is string && data.quality in ['Poor', 'Average', 'Good']) &&
+             isValidDateString(data.date);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data) && 
+                      (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin());
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) && 
+                      (request.resource.data.get('role', 'user') == resource.data.get('role', 'user') || isAdmin());
+    }
+
+    match /users/{userId}/workouts/{workoutId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidWorkoutEntry(request.resource.data);
+      allow update: if isOwner(userId) && isValidWorkoutEntry(request.resource.data);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /users/{userId}/steps/{date} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidStepData(request.resource.data);
+    }
+
+    match /users/{userId}/water/{date} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidWaterData(request.resource.data);
+    }
+
+    match /users/{userId}/prs/{muscle} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidPR(request.resource.data);
+    }
+
+    match /users/{userId}/sleep/{date} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidSleepData(request.resource.data);
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

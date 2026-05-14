@@ -1,0 +1,8 @@
+{
+  "name": "Remix: LevelUp",
+  "description": "A real-time interactive fitness coach with muscle visualization, workout tracking, and AI motivation.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

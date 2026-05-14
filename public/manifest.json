@@ -1,0 +1,21 @@
+{
+  "name": "LevelUp Premium Fitness",
+  "short_name": "LevelUp",
+  "description": "Premium Fitness & Recovery Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#ff3b3b",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/df2ejdvcz/image/upload/v1778747229/logo_ihy7qo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://res.cloudinary.com/df2ejdvcz/image/upload/v1778747229/logo_ihy7qo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
