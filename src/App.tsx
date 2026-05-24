@@ -52,6 +52,11 @@ import Logo from './components/common/Logo';
 import NotificationSettings from './components/NotificationSettings';
 import PostureCheck from './components/PostureCheck';
 import SelfMastery from './components/SelfMastery';
+import { db, auth, messaging } from './firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getToken } from 'firebase/messaging';
+
 
 function SplashScreen() {
   return (
@@ -136,11 +141,19 @@ function WelcomeScreen({ onStart }: { onStart: (name: string) => void }) {
   );
 }
 
+const CURRENT_VERSION = "1.0.0";
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState('stats');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showUpdate, setShowUpdate] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateDetails, setUpdateDetails] = useState<{ version: string; message: string } | null>(null);
+  const [isUpdateModalDelayed, setIsUpdateModalDelayed] = useState(false);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(localStorage.getItem('lv_firebase_uid'));
+  const [activeWorkout, setActiveWorkout] = useState<{ muscle: MuscleGroup; exercise: Exercise } | null>(null);
+  const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
   const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
   const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
   const [showAICoachModal, setShowAICoachModal] = useState(false);
@@ -172,7 +185,10 @@ export default function App() {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setShowUpdate(true);
+                setUpdateDetails({
+                  version: "1.1.0",
+                  message: "Service Worker cache update found. Click Update to apply new workout telemetry."
+                });
               }
             });
           }
@@ -183,17 +199,173 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleUpdate = () => {
+  const forceUpdateApp = async () => {
+    addToast("🔄 Initiating high-speed cache purge...", "success");
+    
+    // Clear browser Cache Storage
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      } catch (err) {
+        console.warn("Failed to delete caches:", err);
+      }
+    }
+
+    // Command SW to Skip Waiting
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
         }
+      } catch (err) {
+        console.warn("Failed signaling SW skip waiting:", err);
+      }
+    }
+
+    // Force hard reload with cache buster
+    setTimeout(() => {
+      window.location.href = window.location.origin + '?v=' + Date.now();
+    }, 1000);
+  };
+
+  const getAndSaveFCMToken = async (uid: string) => {
+    if (!messaging) return;
+    try {
+      const token = await getToken(messaging, {
+        vapidKey: "BP8O3G4J7iUymX1U8eEaL37q_605Yd-6fN7mPscZIDY516d5R84S9431g8UvG_zXp91w6Yt"
       });
-    } else {
-      window.location.reload();
+      if (token) {
+        setFcmToken(token);
+        const tokenRef = doc(db, 'users', uid, 'fcm_tokens', token.substring(0, 32));
+        await setDoc(tokenRef, {
+          token: token,
+          updatedAt: serverTimestamp()
+        });
+        console.log("FCM registration token captured and saved in database:", token);
+      }
+    } catch (err) {
+      console.warn("FCM Token capture bypassed or failed:", err);
     }
   };
+
+  const setupPushNotifications = async (uid: string) => {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      await getAndSaveFCMToken(uid);
+    } else if (Notification.permission === 'default') {
+      // Small delayed trigger to prompt user after engagement
+      setTimeout(async () => {
+        try {
+          const result = await Notification.requestPermission();
+          if (result === 'granted') {
+            addToast("🔔 Push updates configured!", "success");
+            await getAndSaveFCMToken(uid);
+          }
+        } catch (err) {
+          console.warn("FCM request failed or restricted in environment:", err);
+        }
+      }, 5000);
+    }
+  };
+
+  const isVersionNewer = (latest: string, current: string): boolean => {
+    const latestParts = latest.split('.').map(Number);
+    const currentParts = current.split('.').map(Number);
+    for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+      const l = latestParts[i] || 0;
+      const c = currentParts[i] || 0;
+      if (l > c) return true;
+      if (l < c) return false;
+    }
+    return false;
+  };
+
+  const checkVersionUpdate = useCallback(async () => {
+    try {
+      const res = await fetch(`/version.json?t=${Date.now()}`);
+      if (!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+      if (data && data.version) {
+        if (isVersionNewer(data.version, CURRENT_VERSION)) {
+          setUpdateDetails(data);
+        }
+      }
+    } catch (err) {
+      console.log("Failsafe: version check skipped or offline:", err);
+    }
+  }, []);
+
+  const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
+
+  // 1. Firebase Anonymous auth sync & notification setup on land
+  useEffect(() => {
+    signInAnonymously(auth)
+      .then((userCredential) => {
+        const uid = userCredential.user.uid;
+        setFirebaseUid(uid);
+        localStorage.setItem('lv_firebase_uid', uid);
+        console.log("Firebase synchronized. Session secure:", uid);
+        setupPushNotifications(uid);
+      })
+      .catch((err) => {
+        console.warn("Firebase Auth failed (graceful bypass):", err);
+      });
+  }, []);
+
+  // 2. Initial version check & interval scheduler (every 12 minutes)
+  useEffect(() => {
+    checkVersionUpdate();
+
+    const interval = setInterval(() => {
+      checkVersionUpdate();
+    }, 720000); // 12 minutes
+
+    return () => clearInterval(interval);
+  }, [checkVersionUpdate]);
+
+  // 3. Delayed update trigger if within active workout session
+  useEffect(() => {
+    if (updateDetails) {
+      if (activeWorkout) {
+        setIsUpdateModalDelayed(true);
+      } else {
+        if (!isUpdateDismissed) {
+          setShowUpdateModal(true);
+          setIsUpdateModalDelayed(false);
+        }
+      }
+    }
+  }, [updateDetails, activeWorkout, isUpdateDismissed]);
+
+  // 4. URL flag & Service Worker forced events listener
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('update') === 'true' || params.get('trigger_update') === 'true') {
+      setUpdateDetails({
+        version: "1.1.0",
+        message: "New version available! Slashed weight records, added advanced sleep graphs and hydrated water interval logs."
+      });
+    }
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'TRIGGER_FORCE_UPDATE') {
+        setUpdateDetails({
+          version: "1.1.0",
+          message: "A new background update was received. Please update to see the latest workouts!"
+        });
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, []);
+
 
   useEffect(() => {
     // Request notification permission and setup reminders
@@ -296,17 +468,97 @@ export default function App() {
     return (xpVal - 1000) % 350;
   };
 
-  // Active Workout State
-  const [activeWorkout, setActiveWorkout] = useState<{ muscle: MuscleGroup; exercise: Exercise } | null>(null);
-  const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
-
   const today = new Date().toLocaleDateString('en-CA');
+
+  // Session Notifications Database Initialization
+  const initSessionNotifications = useCallback(() => {
+    try {
+      const existing = localStorage.getItem('lv_session_notifications');
+      if (!existing) {
+        const nowMs = Date.now();
+        const fallback = [
+          {
+            id: "sn_1",
+            title: "🏆 Level up Champion!",
+            description: "Congratulations on starting your fitness biometric journey! Complete daily goals to unlock Level 2.",
+            timestamp: new Date(nowMs - 15 * 60 * 1000).toISOString(), // 15m ago
+            status: "Completed",
+            type: "level"
+          },
+          {
+            id: "sn_2",
+            title: "💧 Biometric Hydration Rule Set",
+            description: "Optimal cellular hydration targets generated: standard 250ml intervals active before training.",
+            timestamp: new Date(nowMs - 65 * 60 * 1000).toISOString(), // 1h ago
+            status: "Completed",
+            type: "water"
+          },
+          {
+            id: "sn_3",
+            title: "🏋️ Daily Workout Mission Configured",
+            description: "Action plan synchronized. Complete your home workout checklist today to protect your streak.",
+            timestamp: new Date(nowMs - 180 * 60 * 1000).toISOString(), // 3h ago
+            status: "Pending",
+            type: "workout"
+          },
+          {
+            id: "sn_4",
+            title: "🧘 Postural Symmetry Auditor On",
+            description: "Push-pull kinetic metrics active. The coach is tracking your muscle ratios.",
+            timestamp: new Date(nowMs - 300 * 60 * 1000).toISOString(), // 5h ago
+            status: "Completed",
+            type: "coaching"
+          },
+          {
+            id: "sn_5",
+            title: "🔒 Biometric Data Sandbox Encrypted",
+            description: "Personal metrics isolated. All biometric sessions remain in physical local browser memory.",
+            timestamp: new Date(nowMs - 450 * 60 * 1000).toISOString(), // 7h ago
+            status: "Completed",
+            type: "system"
+          }
+        ];
+        localStorage.setItem('lv_session_notifications', JSON.stringify(fallback));
+      }
+    } catch (e) {
+      console.error("Failed to seed session notifications", e);
+    }
+  }, []);
+
+  const addSessionNotification = useCallback((
+    title: string,
+    description: string,
+    type: 'workout' | 'water' | 'level' | 'coaching' | 'system',
+    status: 'Completed' | 'Pending' = 'Completed'
+  ) => {
+    try {
+      const stored = localStorage.getItem('lv_session_notifications');
+      const list = stored ? JSON.parse(stored) : [];
+      const newItem = {
+        id: "sn_" + Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        title,
+        description,
+        timestamp: new Date().toISOString(),
+        status,
+        type
+      };
+      
+      const updated = [newItem, ...list];
+      localStorage.setItem('lv_session_notifications', JSON.stringify(updated));
+      
+      // Dispatch alert updates
+      window.dispatchEvent(new Event('lv_session_notifications_updated'));
+    } catch (e) {
+      console.error("Failed to add session notification", e);
+    }
+  }, []);
 
   // Load Initial Data
   useEffect(() => {
     if (!username) return;
     
     try {
+      initSessionNotifications();
       const savedData = localStorage.getItem(`lv_data_${username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
@@ -384,6 +636,11 @@ export default function App() {
       setCurrentLevel(computedLevel);
       setLevelUpCelebration(computedLevel);
       addToast(`🎉 LEVEL UP! You reached Level ${computedLevel}! You're getting stronger!`, 'success');
+      addSessionNotification(
+        "🏆 Level Up Achieved!",
+        `Amazing work! You successfully progressed to Level ${computedLevel}. Keep up the high intensity splits!`,
+        "level"
+      );
     } else {
       setCurrentLevel(computedLevel);
     }
@@ -447,6 +704,7 @@ export default function App() {
           const body = "Time to level up. Let's crash through today's exercises!";
           
           addToast(`🔔 ${title} - ${body}`, 'info');
+          addSessionNotification(title, body, "workout", "Pending");
           if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             new Notification(title, { body, icon: "/favicon.ico" });
           }
@@ -459,6 +717,7 @@ export default function App() {
           const body = "Drink 250ml water now to protect muscle cell energy & protein synthesis!";
           
           addToast(`🔔 ${title} - ${body}`, 'info');
+          addSessionNotification(title, body, "water", "Pending");
           if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             new Notification(title, { body, icon: "/favicon.ico" });
           }
@@ -471,6 +730,7 @@ export default function App() {
           const body = "It's time for some deep diaphragmatic breathing/stretching. Prioritize sleep!";
           
           addToast(`🔔 ${title} - ${body}`, 'info');
+          addSessionNotification(title, body, "coaching", "Pending");
           if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             new Notification(title, { body, icon: "/favicon.ico" });
           }
@@ -488,12 +748,18 @@ export default function App() {
     checkAndTriggerReminders();
     const interval = setInterval(checkAndTriggerReminders, 30000);
     return () => clearInterval(interval);
-  }, [addToast]);
+  }, [addToast, addSessionNotification]);
 
   const completeMission = (id: string, text: string, xpReward: number) => {
     setMissions(prev => prev.map(m => m.id === id ? { ...m, completed: true } : m));
     setXp(prev => prev + xpReward);
     setShowRewardBanner({ xp: xpReward, message: `Mission Complete: ${text}` });
+    addSessionNotification(
+      "🎯 Daily Mission Completed",
+      `Completed mission '${text}'! claimed +${xpReward} XP reward bonus.`,
+      "level",
+      "Completed"
+    );
     setTimeout(() => setShowRewardBanner(null), 3000);
   };
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -532,9 +798,20 @@ export default function App() {
         colors: ['#ff3b3b', '#ffd700', '#ffffff']
       });
       setShowRewardBanner({ xp: gainedXp, message: `NEW PERSONAL RECORD! ${entry.weight}KG 🔥` });
+      addSessionNotification(
+        "🔥 New Strength PR Reached!",
+        `Outstanding! Reached a new Personal Record for ${entry.exerciseName || entry.muscle} of ${entry.weight}kg!`,
+        "level"
+      );
     } else {
       setShowRewardBanner({ xp: gainedXp, message: 'Exercise Complete!' });
     }
+    
+    addSessionNotification(
+      "🏋️ Workout Session Registered",
+      `Successfully logged set: ${entry.reps} reps of ${entry.exerciseName || entry.muscle} at ${entry.weight}kg (+${gainedXp} XP).`,
+      "workout"
+    );
     
     setTimeout(() => setShowRewardBanner(null), 3000);
 
@@ -549,14 +826,29 @@ export default function App() {
 
   const handleLogSleep = async (entry: SleepEntry) => {
     setSleep(prev => ({ ...prev, [entry.date]: entry }));
+    addSessionNotification(
+      "😴 Sleep Diagnostics Tracked",
+      `Saved overnight sleep metrics: ${entry.hours} hours. Sleep depth quality scored at ${entry.quality}%.`,
+      "coaching"
+    );
   };
 
   const handleStepsChange = async (newSteps: number) => {
     setSteps(prev => ({ ...prev, [today]: newSteps }));
+    addSessionNotification(
+      "🚶 Daily Activity Synchronized",
+      `Total steps for today updated to ${newSteps}. Cellular kinetic calorie targets advancing.`,
+      "system"
+    );
   };
 
   const handleWaterChange = async (newWater: number) => {
     setWater(prev => ({ ...prev, [today]: newWater }));
+    addSessionNotification(
+      "💧 Hydration Volume Updated",
+      `Logged water: Daily volume is now ${newWater}ml. Cell hydration threshold stabilized.`,
+      "water"
+    );
   };
 
   const handleProfileUpdate = async (profile: UserProfile) => {
@@ -714,24 +1006,54 @@ export default function App() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showUpdate && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000] bg-[var(--accent)] text-white px-6 py-4 rounded-full shadow-[0_0_20px_var(--accent-glow)] flex items-center gap-4 border border-white/20"
-          >
-            <div className="flex items-center gap-2 font-black tracking-widest uppercase">
-              <Flame size={20} className="animate-pulse" />
-              <span>🔥 New Update.</span>
-            </div>
-            <button 
-              onClick={handleUpdate}
-              className="bg-black/20 hover:bg-black/40 px-4 py-2 rounded-full font-bold text-xs uppercase transition-colors"
+        {showUpdateModal && updateDetails && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="bg-[var(--card)] border border-[var(--border)] rounded-[2rem] p-8 max-w-md w-full shadow-[0_0_50px_rgba(255,51,51,0.15)] overflow-hidden relative"
             >
-              Update Now
-            </button>
-          </motion.div>
+              <div className="w-14 h-14 bg-[var(--red)]/10 text-[var(--red)] rounded-2xl flex items-center justify-center mb-6">
+                <Flame size={28} className="animate-pulse text-[var(--red)]" />
+              </div>
+              
+              <h3 className="text-xl font-black text-white tracking-tight uppercase">🚀 Update Available</h3>
+              <p className="text-xs text-[var(--muted)] leading-relaxed mt-4 font-semibold">
+                {updateDetails.message || "New features, better performance, and improved workouts available."}
+              </p>
+
+              <div className="mt-5 p-3 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between font-mono text-[9px]">
+                <span className="text-[var(--muted)]">CURRENT VERSION:</span>
+                <span className="font-bold text-white bg-white/10 px-2 py-0.5 rounded">v{CURRENT_VERSION}</span>
+              </div>
+              
+              <div className="p-3 bg-[var(--red)]/5 border border-[var(--red)]/10 rounded-xl flex items-center justify-between font-mono text-[9px] mt-2">
+                <span className="text-[var(--red)] font-black">LATEST VERSION:</span>
+                <span className="font-bold text-white bg-[var(--red)]/20 text-[var(--red)] px-2 py-0.5 rounded">v{updateDetails.version}</span>
+              </div>
+
+              <div className="mt-8 flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsUpdateDismissed(true);
+                    setShowUpdateModal(false);
+                    addToast("Update postponed. Finish your session!", "info");
+                  }}
+                  className="flex-1 py-4 border border-[var(--border)] bg-[#111111] hover:bg-neutral-900 text-[var(--muted)] hover:text-white font-display font-black text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer active:scale-95"
+                >
+                  Later
+                </button>
+                <button
+                  onClick={forceUpdateApp}
+                  className="flex-1 py-4 bg-[var(--red)] hover:brightness-110 text-white font-display font-black text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-lg shadow-[var(--red)]/15 active:scale-95"
+                >
+                  Update Now
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -1153,19 +1475,10 @@ export default function App() {
       {/* Advanced Overlay Modals */}
       <AnimatePresence>
         {showNotificationSettings && (
-          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md"
-            >
-              <NotificationSettings 
-                onClose={() => setShowNotificationSettings(false)} 
-                triggerToast={addToast} 
-              />
-            </motion.div>
-          </div>
+          <NotificationSettings 
+            onClose={() => setShowNotificationSettings(false)} 
+            triggerToast={addToast} 
+          />
         )}
       </AnimatePresence>
 

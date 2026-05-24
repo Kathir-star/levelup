@@ -129,6 +129,11 @@ service cloud.firestore {
              isValidDateString(data.date);
     }
 
+    function isValidFCMToken(data) {
+      return (data.token is string && data.token.size() > 0 && data.token.size() < 500) &&
+             (data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -166,6 +171,11 @@ service cloud.firestore {
     match /users/{userId}/sleep/{date} {
       allow get, list: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId) && isValidSleepData(request.resource.data);
+    }
+
+    match /users/{userId}/fcm_tokens/{tokenId} {
+      allow read, list: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidFCMToken(request.resource.data);
     }
 
     // Default deny

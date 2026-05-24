@@ -73,6 +73,16 @@
         "date": { "type": "string", "format": "date" }
       },
       "required": ["hours", "quality", "date"]
+    },
+    "FCMToken": {
+      "title": "FCMToken",
+      "description": "FCM registration token for user notifications",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["token", "updatedAt"]
     }
   },
   "firestore": {
@@ -99,6 +109,10 @@
     "/users/{userId}/sleep/{date}": {
       "schema": "SleepEntry",
       "description": "Daily sleep logs for a user"
+    },
+    "/users/{userId}/fcm_tokens/{tokenId}": {
+      "schema": "FCMToken",
+      "description": "FCM token documents for push notifications"
     }
   }
 }
