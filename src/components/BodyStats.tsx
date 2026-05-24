@@ -195,12 +195,33 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
                   </div>
                 </div>
 
-                <div className="p-6 bg-[var(--sub)] border-l-4 border-[var(--accent)] rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info size={14} className="text-[var(--accent)]" />
-                    <span className="tab-heading text-[var(--muted)]">Coach Insight</span>
+                <div className="p-6 bg-[var(--sub)] border-l-4 border-[var(--accent)] rounded-2xl space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info size={14} className="text-[var(--accent)]" />
+                      <span className="tab-heading text-[var(--muted)]">Coach Insight</span>
+                    </div>
+                    <p className="text-sm text-white/80 leading-relaxed italic">"{bmiData.description}"</p>
                   </div>
-                  <p className="text-sm text-white/80 leading-relaxed italic">"{bmiData.description}"</p>
+
+                  {/* Safety Guidance Warnings */}
+                  {bmiData.bmiNum < 18.5 && (
+                    <div className="mt-3 p-3.5 bg-yellow-500/10 border border-yellow-500/20 rounded-xl space-y-1">
+                      <div className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">⚠️ HEALTH ALERT: Underweight BMI</div>
+                      <p className="text-xs text-white/80 leading-relaxed">
+                        To build mass safely, design a sustainable 300-500kcal daily surplus. Avoid immediate maximum work sets. Prioritize compound lifts with complete 2-minute rests to prevent strain.
+                      </p>
+                    </div>
+                  )}
+
+                  {bmiData.bmiNum >= 25 && (
+                    <div className="mt-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl space-y-1 animate-pulse">
+                      <div className="text-[10px] font-black uppercase text-red-400 tracking-wider">⚠️ JOINT HEALTH WATCH: Elevated BMI</div>
+                      <p className="text-xs text-white/80 leading-relaxed">
+                        Joint loading is progressive. We recommend low-impact variations (e.g. standard squats over heavy jump squats) to guard cartilage while pursuing fat-loss.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

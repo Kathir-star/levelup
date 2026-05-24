@@ -463,13 +463,24 @@ export default function HomeWorkout() {
               </div>
             </div>
 
+            {/* Safety Advisements Panel */}
+            <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-start gap-3 mt-4">
+              <span className="text-lg shrink-0">⚠️</span>
+              <div>
+                <dt className="text-[10px] font-black uppercase text-orange-400 tracking-wider">Coach Rule: Dynamic Warm-Up Required</dt>
+                <dd className="text-xs text-white/80 leading-relaxed mt-0.5">
+                  Dynamic stretches are required before Starting this {level.toUpperCase()} workout. Set warm and lubricate tendons to defend against joint injuries.
+                </dd>
+              </div>
+            </div>
+
             <div className="pt-4">
               <button 
                 onClick={startSession}
                 className="w-full py-6 rounded-2xl bg-[var(--accent)] text-white font-black text-2xl tracking-[0.2em] uppercase shadow-2xl shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 group"
               >
                 <Zap size={28} className="group-hover:animate-pulse" />
-                Start Session
+                Start {level.toUpperCase()} Session
               </button>
             </div>
           </div>

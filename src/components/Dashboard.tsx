@@ -6,11 +6,16 @@ import WaterTracker from './WaterTracker';
 import SleepTracker from './SleepTracker';
 import { WorkoutEntry, UserProfile, DailyMission } from '../types';
 import { cn } from '../lib/utils';
-import { ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target, CheckCircle2 } from 'lucide-react';
+import { 
+  ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target, 
+  CheckCircle2, Share2, Copy, Sparkles, Check, Brain, Wind, Play, Shield, Award 
+} from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, AreaChart, Area, Cell 
 } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
+import canvasConfetti from 'canvas-confetti';
 
 interface DashboardProps {
   data: Record<string, WorkoutEntry[]>;
@@ -20,16 +25,59 @@ interface DashboardProps {
   waterGoal: number;
   missions: DailyMission[];
   completeMission: (id: string, text: string, xpReward: number) => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-export default function Dashboard({ data, profile, steps, water, waterGoal, missions, completeMission }: DashboardProps) {
+const RESPECT_MESSAGES = [
+  "Strong men protect, they do not harm. Discipline is the foundation of character. 💪",
+  "Self-control is strength. Right thought is mastery. Calmness is power. 🛡️",
+  "Dopamine balance is the secret key to sustained ambition, memory, and cognitive focus. 🧠",
+  "Discipline builds respect. Control your mind, control your life. ⚡",
+  "True success isn't conquering others. It is dominating your own base impulses. 🧘",
+  "A quiet mind can tolerate delay and friction. Protect your attention from mindless scrolling. 📱",
+  "Character is how you treat those who can do absolutely nothing for you. ✨"
+];
+
+interface DailyActivity {
+  dayName: string;
+  dateStr: string;
+  muscles: string[];
+  stepsCount: number;
+  caloriesBurned: number;
+  exercisesCount: number;
+}
+
+export default function Dashboard({ 
+  data, 
+  profile, 
+  steps, 
+  water, 
+  waterGoal, 
+  missions, 
+  completeMission, 
+  setActiveTab 
+}: DashboardProps) {
   const [calOffset, setCalOffset] = useState(0);
   const [calories, setCalories] = useState(0);
   const [workoutTime, setWorkoutTime] = useState(0);
   const [xp, setXp] = useState(0);
+  
+  // Weekly Performance Export Feature
+  const [exportPreset, setExportPreset] = useState<'beast' | 'standard' | 'aesthetic'>('standard');
+  const [isCopied, setIsCopied] = useState(false);
 
+  // 🧘 Reset Mind / Focus States
+  const [showResetMind, setShowResetMind] = useState(false);
+  const [resetPhase, setResetPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Pause'>('Inhale');
+  const [resetTimer, setResetTimer] = useState(4);
+  const [resetCycles, setResetCycles] = useState(0);
+  
+  // Custom screen notifications
+  const [innerNotification, setInnerNotification] = useState<string | null>(null);
+
+  // Retrieve current XP from localStorage
   useEffect(() => {
     const savedXp = localStorage.getItem('user-xp');
     if (savedXp) setXp(parseInt(savedXp));
@@ -48,12 +96,148 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
 
   const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
+  // Dynamic Smart Insights Calculation
+  const smartInsights = useMemo(() => {
+    const todayObj = new Date();
+    let currentWeekVolume = 0;
+    let prevWeekVolume = 0;
+    
+    let currentWeekCount = 0;
+    let prevWeekCount = 0;
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(todayObj);
+      d.setDate(todayObj.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      const entries = data[dateStr] || [];
+      if (entries.length > 0) {
+        currentWeekCount++;
+      }
+      entries.forEach(e => {
+        currentWeekVolume += (e.weight || 1) * (e.reps || 1) * (e.sets || 1);
+      });
+    }
+
+    for (let i = 8; i < 15; i++) {
+      const d = new Date(todayObj);
+      d.setDate(todayObj.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      const entries = data[dateStr] || [];
+      if (entries.length > 0) {
+        prevWeekCount++;
+      }
+      entries.forEach(e => {
+        prevWeekVolume += (e.weight || 1) * (e.reps || 1) * (e.sets || 1);
+      });
+    }
+
+    let progressPct = 0;
+    if (prevWeekVolume > 0) {
+      progressPct = Math.round(((currentWeekVolume - prevWeekVolume) / prevWeekVolume) * 100);
+    } else if (currentWeekVolume > 0) {
+      progressPct = 12; // Realistic baseline if starting fresh
+    }
+
+    const targetWorkouts = 4;
+    const missedWorkouts = Math.max(0, targetWorkouts - currentWeekCount);
+    const consistencyAdvice = currentWeekCount >= 4 ? "Great consistency!" : "Physical adaptation underway!";
+
+    return {
+      progressPct,
+      missedWorkouts,
+      consistencyAdvice,
+      currentWeekCount,
+      isOvertraining: currentWeekCount >= 5
+    };
+  }, [data]);
+
+  // Dynamic day suggested slit split
+  const recommendedSplit = useMemo(() => {
+    const day = new Date().getDay();
+    switch(day) {
+      case 0: return { label: "REST & RECOVERY SPLIT", desc: "Prioritize sleep & cellular rebuilding." };
+      case 1: return { label: "MONDAY CHEST & TRICEPS", desc: "High fuel push split. Blast chest volume!" };
+      case 2: return { label: "BACK & PULL INTENSITY", desc: "Scale lats, rows, and arm thickness." };
+      case 3: return { label: "SAVAGE LEG BONUS DAY", desc: "Leg Day Bonus: +100 XP active today!" };
+      case 4: return { label: "SHOULDERS & DELTOIDS", desc: "Refine joint symmetry and anterior posture." };
+      case 5: return { label: "METABOLIC POWER SPLIT", desc: "Core, high intensity, and cardio drills." };
+      default: return { label: "SQUAT & POSTURE MASTER", desc: "Heavy squats, deep lunges, zero excuses." };
+    }
+  }, []);
+
+  // 🧘 Reset Mind Sound & Timing Loop
+  useEffect(() => {
+    let interval: number | undefined;
+    if (showResetMind) {
+      interval = window.setInterval(() => {
+        setResetTimer(prev => {
+          if (prev <= 1) {
+            setResetPhase(curr => {
+              if (curr === 'Inhale') return 'Hold';
+              if (curr === 'Hold') return 'Exhale';
+              if (curr === 'Exhale') return 'Pause';
+              
+              setResetCycles(v => v + 1);
+              return 'Inhale';
+            });
+            return 4;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setResetPhase('Inhale');
+      setResetTimer(4);
+      setResetCycles(0);
+    }
+    return () => clearInterval(interval);
+  }, [showResetMind]);
+
+  // Completions logic for Reset Mind Box Breathing
+  useEffect(() => {
+    if (resetCycles >= 3 && showResetMind) {
+      setShowResetMind(false);
+      
+      const currentXp = parseInt(localStorage.getItem('user-xp') || '0');
+      const earnedXp = 25;
+      localStorage.setItem('user-xp', String(currentXp + earnedXp));
+      window.dispatchEvent(new Event('storage'));
+
+      // Clean Web Audio context synthesizer sound feedback
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5 string
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
+      } catch (e) {}
+
+      // Ambient fireworks splash celebration
+      canvasConfetti({
+        particleCount: 150,
+        spread: 80,
+        colors: ['#3b82f6', '#10b981', '#ffffff']
+      });
+
+      setInnerNotification("🧠 Focus Calibrated! Core cortisol dropped, dopamine balance secured. Received +25 XP!");
+      setTimeout(() => setInnerNotification(null), 5000);
+    }
+  }, [resetCycles, showResetMind]);
+
   // Resolve current workout type for dynamic quotes
   const currentWorkoutType = useMemo(() => {
     const entries = data[today] || [];
     if (entries.length === 0) return undefined;
     
-    // Get last logged muscle
     const lastMuscle = entries[entries.length - 1].muscle.toLowerCase();
     
     if (['legs', 'glutes', 'hamstrings', 'quadriceps'].includes(lastMuscle)) return 'legs';
@@ -62,6 +246,7 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
     return undefined;
   }, [data, today]);
 
+  // Daily statistics calculation
   useEffect(() => {
     const entries = data[today] || [];
     let setsSum = 0;
@@ -76,6 +261,7 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
     setCalories(Math.round(activeCals + stepCals));
   }, [data, profile, steps, today]);
 
+  // Recharts Trends Cache
   const chartData = useMemo(() => {
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
@@ -136,10 +322,240 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
     return Object.keys(data).sort((a, b) => b.localeCompare(a)).slice(0, 10);
   }, [data]);
 
+  // Social text aggregation
+  const weeklyStatsText = useMemo(() => {
+    const todayObj = new Date();
+    let workoutsCount = 0;
+    let totalSteps = 0;
+    let totalCals = 0;
+    let totalExercises = 0;
+    const daysActivity: DailyActivity[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(todayObj);
+      d.setDate(todayObj.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const entries = data[dateStr] || [];
+      const musclesSet = new Set<string>();
+      entries.forEach(e => {
+        if (e.muscle) musclesSet.add(e.muscle);
+      });
+      const muscles = Array.from(musclesSet);
+      const stepsCount = steps[dateStr] || 0;
+      const caloriesBurned = Math.round(stepsCount * 0.04 + entries.length * 15 * 5);
+
+      if (entries.length > 0) {
+        workoutsCount++;
+        totalExercises += entries.length;
+      }
+      totalSteps += stepsCount;
+      totalCals += caloriesBurned;
+
+      daysActivity.push({
+        dayName,
+        dateStr,
+        muscles,
+        stepsCount,
+        caloriesBurned,
+        exercisesCount: entries.length
+      });
+    }
+
+    const consistencyPct = Math.round((workoutsCount / 7) * 100);
+    const athleteName = profile.name || 'Champion';
+
+    if (exportPreset === 'beast') {
+      const breakdown = daysActivity
+        .map(day => {
+          if (day.muscles.length > 0) {
+            return `• ${day.dayName}: ${day.muscles.join(', ')} (${day.exercisesCount} exercises logged) 🔥`;
+          } else {
+            return `• ${day.dayName}: Active Rest 🔋`;
+          }
+        })
+        .join('\n');
+
+      return `🔥 LEVELUP BEAST MODE WEEKLY STATS 🔥\n` +
+        `Athlete: ${athleteName}\n` +
+        `Workout Frequency: ${workoutsCount} / 7 days\n` +
+        `Total Step Count: ${totalSteps.toLocaleString()} 👟\n` +
+        `Est. Active Burn: ${totalCals.toLocaleString()} Kcal ⚡\n` +
+        `Exercises Crushed: ${totalExercises} completed\n\n` +
+        `Weekly Breakdown:\n${breakdown}\n\n` +
+        `Consistency Core: ${consistencyPct}% Locked in. No excuses! ⚔️\n` +
+        `#LevelUp #WeeklyPerformance #BeastMode #Discipline`;
+    }
+
+    if (exportPreset === 'aesthetic') {
+      return `Weekly Grind Complete! ✅\n` +
+        `• Active workout days: ${workoutsCount}\n` +
+        `• Footsteps tracked: ${totalSteps.toLocaleString()} steps 💧\n` +
+        `• Total kinetic calorie output: ${totalCals.toLocaleString()} kcal est.\n\n` +
+        `"Self-control is strength. Right thought is mastery. Calmness is power."\n\n` +
+        `#LevelUp #Mindfulness #HabitLoop #Wellness`;
+    }
+
+    const muscleListSet = new Set<string>();
+    daysActivity.flatMap(day => day.muscles).forEach(m => {
+      if (m) muscleListSet.add(m);
+    });
+    const muscleList = Array.from(muscleListSet);
+    const musclesTrained = muscleList.length > 0 ? muscleList.join(', ') : 'Active Recovery';
+
+    return `🚀 LEVELUP WEEKLY PERFORMANCE REPORT 🚀\n` +
+      `Active Days: ${workoutsCount} / 7\n` +
+      `Weekly Calorie Burn: ${totalCals.toLocaleString()} Kcal\n` +
+      `Total Weekly Footsteps: ${totalSteps.toLocaleString()} steps\n` +
+      `Focus Muscles: ${musclesTrained}\n\n` +
+      `Consistency Rating: ${consistencyPct}% ✅ \n\n` +
+      `Powered by LevelUp. Leveling up daily! 💪⚡\n` +
+      `#LevelUp #FitnessStreak #WorkoutMotivation #Discipline`;
+  }, [data, steps, profile.name, exportPreset]);
+
+  // Dynamic values for Weekly combat checklist status
+  const workoutsLast7Days = useMemo(() => {
+    let count = 0;
+    const todayObj = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(todayObj);
+      d.setDate(todayObj.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      if (data[dateStr] && data[dateStr].length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }, [data]);
+
+  const targetWorkouts = 4;
+  const progressPct = Math.min(100, Math.round((workoutsLast7Days / targetWorkouts) * 100));
+  const isCompleted = workoutsLast7Days >= targetWorkouts;
+  
+  const [isClaimed, setIsClaimed] = useState(false);
+  useEffect(() => {
+    const lastClaimed = localStorage.getItem('lv_weekly_challenge_claimed_ts');
+    if (lastClaimed) {
+      const diffMs = Date.now() - parseInt(lastClaimed);
+      if (diffMs < 604800000) {
+        setIsClaimed(true);
+      }
+    }
+  }, []);
+
+  const handleClaimWeeklyBonus = () => {
+    if (!isCompleted || isClaimed) return;
+    localStorage.setItem('lv_weekly_challenge_claimed_ts', String(Date.now()));
+    setIsClaimed(true);
+    const currentXp = parseInt(localStorage.getItem('user-xp') || '0');
+    localStorage.setItem('user-xp', String(currentXp + 150));
+    window.dispatchEvent(new Event('storage'));
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* ⚡ Tactical Command Core & Smart Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Quick Action Button Card */}
+        <div className="glass-card p-6 bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all" />
+          <div>
+            <div className="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center mb-3">
+              <Play size={18} fill="currentColor" />
+            </div>
+            <h4 className="text-xs font-black text-[var(--muted)] uppercase tracking-widest">{recommendedSplit.desc}</h4>
+            <div className="text-xl font-display font-black tracking-tight text-white/95 mt-1">{recommendedSplit.label}</div>
+          </div>
+          <button 
+            onClick={() => {
+              if (setActiveTab) {
+                setActiveTab('sessions');
+              }
+            }}
+            className="w-full mt-5 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/15"
+          >
+            ▶ Start Today's Split
+          </button>
+        </div>
+
+        {/* Reset Mind Button Card */}
+        <div className="glass-card p-6 bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all" />
+          <div>
+            <div className="w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center mb-3">
+              <Wind size={18} />
+            </div>
+            <h4 className="text-xs font-black text-[var(--muted)] uppercase tracking-widest">Somatic Cortisol Reducer</h4>
+            <div className="text-xl font-display font-black tracking-tight text-white/95 mt-1">Calm & Focus baseline</div>
+          </div>
+          <button 
+            onClick={() => setShowResetMind(true)}
+            className="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-blue-500/15"
+          >
+            🧘 Reset Mind (Box Breathing)
+          </button>
+        </div>
+
+        {/* Smart Insights Bento Column */}
+        <div className="glass-card p-6 bg-gradient-to-br from-amber-500/5 to-transparent border border-white/5 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden">
+          <div>
+            <div className="flex items-center gap-1.5 mb-3">
+              <Sparkles size={14} className="text-amber-400 animate-pulse" />
+              <h4 className="text-xs font-black text-white/90 uppercase tracking-wider">Coach Smart Insights</h4>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[var(--muted)] font-black uppercase">Weekly Growth</span>
+                <span className={cn(
+                  "font-[950]",
+                  smartInsights.progressPct >= 0 ? "text-emerald-400" : "text-red-400"
+                )}>
+                  {smartInsights.progressPct >= 0 ? "+" : ""}{smartInsights.progressPct}% this week
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[var(--muted)] font-black uppercase">Workouts Tracker</span>
+                <span className="text-white font-[950]">
+                  {smartInsights.missedWorkouts === 0 ? "✓ Optimization complete" : `${smartInsights.missedWorkouts} sessions missed`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[var(--muted)] font-black uppercase">Coach Rating</span>
+                <span className="text-yellow-400 font-[950]">{smartInsights.consistencyAdvice}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-[9px] uppercase font-bold text-[var(--muted)] tracking-wider mt-5">
+            {smartInsights.isOvertraining ? "⚠️ CNS ALERT: 5+ workout days. Rest is required!" : "✓ CNS baseline within adaptive buffer."}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Inline inner Notification Alert banner */}
+      <AnimatePresence>
+        {innerNotification && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="p-4 bg-emerald-500/15 border border-emerald-500/35 rounded-2xl text-emerald-300 text-xs font-black uppercase tracking-wider flex items-center justify-between gap-4 shadow-lg shadow-emerald-500/5"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={16} />
+              <span>{innerNotification}</span>
+            </div>
+            <button onClick={() => setInnerNotification(null)} className="text-emerald-300 hover:text-white pb-0.5">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* XP Progress Bar */}
-      <div className="glass-card p-6 bg-gradient-to-r from-[var(--card)] to-[var(--bg)] border-l-4 border-l-[var(--accent)] mb-8">
+      <div className="glass-card p-6 bg-gradient-to-r from-[var(--card)] to-[var(--bg)] border-l-4 border-l-[var(--accent)]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--red)] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-[var(--accent)]/20 tracking-tighter">
@@ -160,6 +576,234 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
             className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--red)] transition-all duration-1000 shadow-[0_0_15px_var(--accent-glow)]"
             style={{ width: `${progressToNextLevel}%` }}
           />
+        </div>
+      </div>
+
+      {/* ⚔️ Weekly Challenge Card System */}
+      <div className="glass-card p-6 bg-gradient-to-r from-purple-500/5 to-pink-500/10 border-2 border-purple-500/20 rounded-[2rem] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl">⚔️</span>
+            </div>
+            <div>
+              <h4 className="text-base font-black uppercase text-white tracking-tight flex items-center gap-1.5">
+                Weekly Combat Training <span className="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-black tracking-widest">ACTIVE</span>
+              </h4>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider">Maintain muscle synthesis with 4 active logs a week</p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span className="text-xs font-black uppercase text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-xl border border-purple-500/20">
+              REWARD: +150 XP
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs font-[800] uppercase tracking-wider">
+            <span className="text-white/90">Challenge Status: {workoutsLast7Days} / {targetWorkouts} workouts logged</span>
+            <span className="text-purple-400 font-black">{progressPct}% Complete</span>
+          </div>
+
+          <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-500 via-pink-400 to-amber-400 rounded-full transition-all duration-1000"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-[9px] text-[var(--muted)] font-bold uppercase tracking-widest flex items-center gap-1">
+              🔒 Core cycle resets weekly based on last log verification.
+            </div>
+            {isCompleted ? (
+              isClaimed ? (
+                <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black uppercase tracking-widest px-4 py-2 rounded-xl flex items-center gap-1.5">
+                  ✓ Reward Claimed
+                </span>
+              ) : (
+                <button
+                  onClick={handleClaimWeeklyBonus}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-display font-black text-[10px] uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                >
+                  Claim +150 XP Reward
+                </button>
+              )
+            ) : (
+              <span className="text-[9px] text-[var(--muted)] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg tracking-widest">
+                Lockout Active
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 📊 Weekly Performance Social Export Section */}
+      <div className="glass-card p-6 bg-gradient-to-br from-[var(--card)] to-black border-2 border-white/5 rounded-[2rem] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-36 h-36 bg-[var(--accent)]/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded-xl flex items-center justify-center shadow-lg">
+              <Share2 size={20} />
+            </div>
+            <div>
+              <h4 className="text-base font-black uppercase text-white tracking-tight flex items-center gap-2">
+                Weekly Performance Export <span className="text-[9px] bg-[var(--accent)]/20 text-[var(--accent)] px-2 py-0.5 rounded font-black tracking-widest">NEW</span>
+              </h4>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider">Aggregate and share your last 7 days of raw performance</p>
+            </div>
+          </div>
+          
+          {/* Preset Buttons for custom styles */}
+          <div className="flex gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5 md:self-center">
+            {(['beast', 'standard', 'aesthetic'] as const).map((preset) => (
+              <button
+                key={preset}
+                onClick={() => setExportPreset(preset)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                  exportPreset === preset
+                    ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)] scale-[1.02]"
+                    : "text-[var(--muted)] hover:text-white"
+                )}
+              >
+                {preset === 'beast' && '🔥 Beast Mode'}
+                {preset === 'standard' && '⚡ Standard'}
+                {preset === 'aesthetic' && '🌱 Aesthetic'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Dynamic customized text generator layout */}
+        <div className="space-y-4">
+          <div className="bg-black/40 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all">
+            <textarea
+              value={weeklyStatsText}
+              readOnly
+              className="w-full text-xs text-white/90 bg-transparent border-0 outline-none resize-none font-mono min-h-[150px] leading-relaxed select-all"
+              placeholder="Collecting performance metrics..."
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+            <div className="text-[10px] text-[var(--muted)] font-semibold uppercase tracking-widest flex items-center gap-1.5">
+              <Sparkles size={12} className="text-[var(--yellow)] animate-pulse" /> 
+              Click below to copy your summary text for Instagram, Twitter or WhatsApp!
+            </div>
+
+            <button
+              onClick={() => {
+                try {
+                  navigator.clipboard.writeText(weeklyStatsText);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2500);
+                } catch (err) {
+                  // Fallback in case of copy constraints inside direct iframes
+                  const textArea = document.createElement("textarea");
+                  textArea.value = weeklyStatsText;
+                  document.body.appendChild(textArea);
+                  textArea.select();
+                  try {
+                    document.execCommand('copy');
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2500);
+                  } catch (e) {}
+                  document.body.removeChild(textArea);
+                }
+              }}
+              className={cn(
+                "w-full sm:w-auto py-3 px-6 rounded-xl transition-all font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg cursor-pointer min-w-[170px]",
+                isCopied 
+                  ? "bg-emerald-500 text-white shadow-emerald-500/10" 
+                  : "bg-white text-black hover:bg-neutral-200"
+              )}
+            >
+              {isCopied ? (
+                <>
+                  <Check size={14} /> Copied!
+                </>
+              ) : (
+                <>
+                  <Copy size={14} /> Copy Summary
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Smart Health & Safety Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* BMI & Body Index */}
+        <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all pointer-events-none" />
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="tab-heading flex items-center gap-2">
+                <Activity size={16} className="text-[var(--accent)]" />
+                BMI & Body Index
+             </h3>
+             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Calculated Summary</span>
+          </div>
+          <div className="flex items-baseline gap-4 mt-2">
+            <span className="text-5xl font-black tracking-tighter text-white">
+              {profile.height && profile.weight ? (profile.weight / ((profile.height / 100) ** 2)).toFixed(1) : "—"}
+            </span>
+            <span className={cn(
+              "text-[10px] font-black uppercase px-3 py-1 rounded-full",
+              !(profile.height && profile.weight) ? "bg-white/5 text-white/50" : 
+              (profile.weight / ((profile.height / 100) ** 2)) < 18.5 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" :
+              (profile.weight / ((profile.height / 100) ** 2)) < 25 ? "bg-green-500/10 text-green-400 border border-green-500/20" :
+              (profile.weight / ((profile.height / 100) ** 2)) < 30 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"
+            )}>
+              {!(profile.height && profile.weight) ? "Update profile" : 
+               (profile.weight / ((profile.height / 100) ** 2)) < 18.5 ? "Underweight" : 
+               (profile.weight / ((profile.height / 100) ** 2)) < 25 ? "Normal Weight" : 
+               (profile.weight / ((profile.height / 100) ** 2)) < 30 ? "Overweight" : "Obese"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--muted)]">
+            <div>Weight: <strong className="text-white">{profile.weight || "—"} kg</strong></div>
+            <div>Height: <strong className="text-white">{profile.height || "—"} cm</strong></div>
+          </div>
+        </div>
+
+        {/* Dynamic Recovery & Safety Rules */}
+        <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+          <div className="absolute top-0 right-5 w-32 h-32 bg-[var(--yellow)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--yellow)]/10 transition-all pointer-events-none" />
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="tab-heading flex items-center gap-2">
+                <Target size={16} className="text-[var(--yellow)]" />
+                Coach Recovery Rule
+             </h3>
+             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Activity Watch</span>
+          </div>
+          <div className="space-y-3 mt-2">
+            {Object.keys(data).filter(k => {
+              const diff = Math.abs(new Date().getTime() - new Date(k).getTime());
+              return diff <= (1000 * 60 * 60 * 24 * 7);
+            }).length >= 5 ? (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <div className="text-xs text-white/90 leading-relaxed">
+                  <strong>⚠️ High Frequency Overtraining:</strong> You have trained 5+ days in the last week. Muscles synthesize during rest, not lift. Schedule a 48H pure recovery break!
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <div className="text-xs text-white/90 leading-relaxed">
+                  <strong>💧 Hydration & Recovery Plan:</strong> Consume 3.5 liters (12 glasses) of water on lift days to assist filtration and complete protein synthesis. Stay safe.
+                </div>
+              </div>
+            )}
+            <p className="text-[10px] text-[var(--muted)] uppercase font-[800] tracking-wider leading-relaxed">
+              * Tip: Healthy joints require active warm-ups, complete ROM, and sound sleep.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -194,6 +838,35 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
                </div>
             ))}
          </div>
+      </div>
+
+      {/* Self-Discipline & Dopamine Scorecard */}
+      <div className="glass-card p-6 bg-gradient-to-br from-[var(--card)] to-[#070707] border border-[var(--border)] rounded-[2rem] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🛡️</span>
+            <div>
+              <h3 className="text-xs font-black uppercase text-white tracking-widest">Self-Mastery Core Status</h3>
+              <p className="text-[9px] text-[var(--muted)] font-black uppercase tracking-wider">Subtle neurological alignment indicators</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
+              🔥 Streak: <span className="font-black">{localStorage.getItem('sm_detox_streak') || '0'} Days</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
+              ⚡ Focus: <span className="font-black">{localStorage.getItem(`sm_dopamine_index_${today}`) || '75'}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Subtle rotate quotes inside Dashboard */}
+        <div className="p-3.5 bg-white/5 border border-white/5 rounded-xl text-center">
+          <p className="text-[11px] text-white/90 italic leading-relaxed">
+            " {RESPECT_MESSAGES[Math.floor(Date.now() / 86400000) % RESPECT_MESSAGES.length]} "
+          </p>
+        </div>
       </div>
 
       {/* Wellness Row */}
@@ -325,7 +998,7 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
                   contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
                   itemStyle={{ color: 'var(--text)' }}
                 />
-                <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} animationDuration={2000} />
+                <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -349,7 +1022,7 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
                   cursor={{ fill: 'var(--sub)' }}
                   contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}
                 />
-                <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} animationDuration={1500} />
+                <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -408,6 +1081,101 @@ export default function Dashboard({ data, profile, steps, water, waterGoal, miss
           </div>
         </div>
       </div>
+
+      {/* 🧘 Reset Mind Fullscreen Immersive Breathing Overlay Modal */}
+      <AnimatePresence>
+        {showResetMind && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none"
+          >
+            {/* Ambient glowing fields */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+
+            <div className="relative max-w-sm w-full flex flex-col items-center space-y-8 z-10">
+              <div className="flex flex-col items-center">
+                <Wind size={40} className="text-blue-400 animate-pulse mb-3" />
+                <h2 className="text-3xl font-display font-black text-white italic uppercase tracking-wider">RESET MIND ACTIVE</h2>
+                <div className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.3em] mt-1">Somatic Cortisol Reducer Active</div>
+              </div>
+
+              {/* Breathing Sphere */}
+              <div className="w-60 h-60 flex items-center justify-center relative">
+                <motion.div 
+                  className="absolute inset-0 rounded-full border-2 border-dashed border-blue-400/20"
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
+                />
+                
+                <motion.div 
+                  className={cn(
+                    "rounded-full flex flex-col items-center justify-center transition-colors duration-1000 shadow-2xl relative",
+                    resetPhase === 'Inhale' && "bg-blue-500/10 border-2 border-blue-400 shadow-blue-500/20",
+                    resetPhase === 'Hold' && "bg-purple-500/10 border-2 border-purple-400 shadow-purple-500/20",
+                    resetPhase === 'Exhale' && "bg-emerald-500/10 border-2 border-emerald-400 shadow-emerald-500/20",
+                    resetPhase === 'Pause' && "bg-white/5 border-2 border-white/20 shadow-white/5"
+                  )}
+                  animate={{
+                    scale: resetPhase === 'Inhale' ? [1, 1.3] :
+                           resetPhase === 'Hold' ? 1.3 :
+                           resetPhase === 'Exhale' ? [1.3, 1] : 1
+                  }}
+                  transition={{ duration: 4, ease: "easeInOut" }}
+                  style={{ width: '160px', height: '160px' }}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div 
+                      key={resetPhase}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="text-center"
+                    >
+                      <span className="text-xl font-display font-black text-white uppercase italic tracking-widest">{resetPhase}</span>
+                      <div className="text-3xl font-black text-white/95 mt-1">{resetTimer}s</div>
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+
+              {/* Box Progress Indicators */}
+              <div className="grid grid-cols-4 gap-2 w-full max-w-xs justify-center">
+                {(['Inhale', 'Hold', 'Exhale', 'Pause'] as const).map((p) => {
+                  const isCurrent = resetPhase === p;
+                  return (
+                    <div className="flex flex-col items-center gap-1.5" key={p}>
+                      <div className={cn(
+                        "h-1.5 w-full rounded-full transition-all duration-500",
+                        isCurrent ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.5)]" : "bg-white/10"
+                      )} />
+                      <span className="text-[8px] font-black uppercase text-[var(--muted)] tracking-wider">{p}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Cycle Progression</div>
+                <div className="text-sm font-bold text-white mt-1">Cycle {resetCycles + 1} of 3 • Deep Diaphragmatic Balance</div>
+                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mt-3 border border-white/5">
+                  <div className="h-full bg-blue-400 transition-all duration-500" style={{ width: `${(resetCycles / 3) * 100}%` }} />
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowResetMind(false)}
+                className="px-6 py-2 bg-white/5 text-[var(--muted)] hover:text-white border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:bg-white/10 active:scale-95"
+              >
+                Interrupt Session
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

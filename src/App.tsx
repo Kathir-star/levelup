@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MuscleGroup, Exercise, WorkoutEntry, UserProfile, PR, SleepEntry } from './types';
+import { useState, useEffect, useCallback } from 'react';
+import { MuscleGroup, Exercise, WorkoutEntry, UserProfile, PR, SleepEntry, DailyMission } from './types';
 import { calculateStreak, cn } from './lib/utils';
 import { QUOTES, TAMIL_QUOTES } from './constants';
 import { motion, AnimatePresence } from 'motion/react';
@@ -28,13 +28,17 @@ import {
   Activity,
   RefreshCcw,
   MonitorDown,
-  Info
+  Info,
+  Brain,
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WorkoutLog from './components/WorkoutLog';
 import MuscleVisualizer from './components/MuscleVisualizer';
 import WorkoutExecution from './components/WorkoutExecution';
 import AICoach from './components/AICoach';
+import AICoachRobot from './components/AICoachRobot';
 import StepTracker from './components/StepTracker';
 import WaterTracker from './components/WaterTracker';
 import SleepTracker from './components/SleepTracker';
@@ -43,7 +47,11 @@ import BodyStats from './components/BodyStats';
 import MuscleProgressCharts from './components/MuscleProgressCharts';
 import HomeWorkout from './components/HomeWorkout';
 import StructuredPlans from './components/StructuredPlans';
+import ExerciseAnimations from './components/ExerciseAnimations';
 import Logo from './components/common/Logo';
+import NotificationSettings from './components/NotificationSettings';
+import PostureCheck from './components/PostureCheck';
+import SelfMastery from './components/SelfMastery';
 
 function SplashScreen() {
   return (
@@ -130,9 +138,13 @@ function WelcomeScreen({ onStart }: { onStart: (name: string) => void }) {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('stats');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showUpdate, setShowUpdate] = useState(false);
+  const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
+  const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
+  const [showAICoachModal, setShowAICoachModal] = useState(false);
+  const [fabHovered, setFabHovered] = useState(false);
 
   useEffect(() => {
     // Hide splash screen after 2.5 seconds
@@ -248,6 +260,42 @@ export default function App() {
   const [missions, setMissions] = useState<DailyMission[]>([]);
   const [showRewardBanner, setShowRewardBanner] = useState<{xp: number, message: string} | null>(null);
 
+  // Smart Advanced States
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showPostureModal, setShowPostureModal] = useState(false);
+  const [showChangeNameModal, setShowChangeNameModal] = useState(false);
+  const [newNameInput, setNewNameInput] = useState('');
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [levelUpCelebration, setLevelUpCelebration] = useState<number | null>(null);
+  const [toasts, setToasts] = useState<{ id: string; message: string; type?: string }[]>([]);
+
+  // Toast Creator Helper
+  const addToast = useCallback((message: string, type: string = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  }, []);
+
+  // Level Progression Math Formulas
+  const getLevelFromXp = (xpVal: number) => {
+    if (xpVal < 100) return 1;
+    if (xpVal < 250) return 2;
+    if (xpVal < 450) return 3;
+    if (xpVal < 700) return 4;
+    return 5 + Math.floor((xpVal - 700) / 350);
+  };
+
+  const getXpInCurrentLevel = (xpVal: number) => {
+    if (xpVal < 100) return xpVal;
+    if (xpVal < 250) return xpVal - 100;
+    if (xpVal < 450) return xpVal - 250;
+    if (xpVal < 700) return xpVal - 450;
+    if (xpVal < 1000) return xpVal - 700;
+    return (xpVal - 1000) % 350;
+  };
+
   // Active Workout State
   const [activeWorkout, setActiveWorkout] = useState<{ muscle: MuscleGroup; exercise: Exercise } | null>(null);
   const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
@@ -325,6 +373,22 @@ export default function App() {
     localStorage.setItem('lvTamilMode', String(tamilMode));
   }, [theme, userProfile.gender, tamilMode]);
 
+  // Level-Up Threshold Progression & Toast Alert
+  useEffect(() => {
+    const computedLevel = getLevelFromXp(xp);
+    try {
+      localStorage.setItem('user-xp', String(xp));
+    } catch (e) {}
+
+    if (xp > 0 && computedLevel > currentLevel) {
+      setCurrentLevel(computedLevel);
+      setLevelUpCelebration(computedLevel);
+      addToast(`🎉 LEVEL UP! You reached Level ${computedLevel}! You're getting stronger!`, 'success');
+    } else {
+      setCurrentLevel(computedLevel);
+    }
+  }, [xp, currentLevel]);
+
   // Greeting Effect
   useEffect(() => {
     if (userProfile.name) {
@@ -339,6 +403,92 @@ export default function App() {
       }
     }
   }, [userProfile.name, tamilMode]);
+
+  // Local notification reminder background scheduler
+  useEffect(() => {
+    const checkAndTriggerReminders = () => {
+      try {
+        let stored = localStorage.getItem('lv_notification_config');
+        let config = {
+          workoutReminder: true,
+          workoutTime: '18:00',
+          waterReminder: true,
+          waterTime: '12:00',
+          restReminder: false,
+          restTime: '09:00'
+        };
+        
+        if (stored) {
+          config = JSON.parse(stored);
+        } else {
+          // Initialize defaults
+          localStorage.setItem('lv_notification_config', JSON.stringify(config));
+        }
+
+        const now = new Date();
+        const currentHour = String(now.getHours()).padStart(2, '0');
+        const currentMinute = String(now.getMinutes()).padStart(2, '0');
+        const currentTimeString = `${currentHour}:${currentMinute}`;
+        const todayStr = now.toLocaleDateString('en-CA');
+
+        // Check already fired cache from localStorage to prevent multiple spawns in same minute
+        const firedStored = localStorage.getItem('lv_notif_fired_log');
+        let firedLog: Record<string, string[]> = firedStored ? JSON.parse(firedStored) : {};
+        if (!firedLog[todayStr]) {
+          firedLog = { [todayStr]: [] }; // Start fresh on new day
+        }
+
+        const firedToday = firedLog[todayStr];
+
+        // 1. Workout Reminder
+        if (config.workoutReminder && config.workoutTime === currentTimeString && !firedToday.includes('workout')) {
+          firedToday.push('workout');
+          const title = "🏋️ Workout Time!";
+          const body = "Time to level up. Let's crash through today's exercises!";
+          
+          addToast(`🔔 ${title} - ${body}`, 'info');
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: "/favicon.ico" });
+          }
+        }
+
+        // 2. Water Reminder
+        if (config.waterReminder && config.waterTime === currentTimeString && !firedToday.includes('water')) {
+          firedToday.push('water');
+          const title = "💧 Hydration Check";
+          const body = "Drink 250ml water now to protect muscle cell energy & protein synthesis!";
+          
+          addToast(`🔔 ${title} - ${body}`, 'info');
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: "/favicon.ico" });
+          }
+        }
+
+        // 3. Rest Reminder
+        if (config.restReminder && config.restTime === currentTimeString && !firedToday.includes('rest')) {
+          firedToday.push('rest');
+          const title = "🧘 Recovery System Check";
+          const body = "It's time for some deep diaphragmatic breathing/stretching. Prioritize sleep!";
+          
+          addToast(`🔔 ${title} - ${body}`, 'info');
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: "/favicon.ico" });
+          }
+        }
+
+        // Save updated fired list
+        firedLog[todayStr] = firedToday;
+        localStorage.setItem('lv_notif_fired_log', JSON.stringify(firedLog));
+      } catch (err) {
+        console.error("Local notification scheduler error:", err);
+      }
+    };
+
+    // Run layout validation check immediately and every 30 seconds
+    checkAndTriggerReminders();
+    const interval = setInterval(checkAndTriggerReminders, 30000);
+    return () => clearInterval(interval);
+  }, [addToast]);
 
   const completeMission = (id: string, text: string, xpReward: number) => {
     setMissions(prev => prev.map(m => m.id === id ? { ...m, completed: true } : m));
@@ -413,6 +563,24 @@ export default function App() {
     setUserProfile(profile);
   };
 
+  const handleDeleteWorkout = (date: string, index: number) => {
+    setWorkoutData(prev => {
+      const updatedList = [...(prev[date] || [])];
+      updatedList.splice(index, 1);
+      return { ...prev, [date]: updatedList };
+    });
+    addToast("🗑️ Logged entry successfully deleted.", "warning");
+  };
+
+  const handleEditWorkout = (date: string, index: number, updatedEntry: WorkoutEntry) => {
+    setWorkoutData(prev => {
+      const updatedList = [...(prev[date] || [])];
+      updatedList[index] = updatedEntry;
+      return { ...prev, [date]: updatedList };
+    });
+    addToast("✏️ Logged entry updated successfully.", "success");
+  };
+
   const startGuidedWorkout = (muscle: MuscleGroup, exercise: Exercise) => {
     setActiveWorkout({ muscle, exercise });
   };
@@ -436,9 +604,45 @@ export default function App() {
   };
 
   const handleChangeName = () => {
-    localStorage.removeItem('username');
-    setUsername(null);
-    setUserProfile({ name: '' });
+    setNewNameInput(username || '');
+    setShowChangeNameModal(true);
+  };
+
+  const handleSaveName = (nameToSave: string) => {
+    const trimmed = nameToSave.trim();
+    if (!trimmed) {
+      addToast("⚠️ Name cannot be empty!", "error");
+      return;
+    }
+    if (trimmed === username) {
+      setShowChangeNameModal(false);
+      return;
+    }
+
+    try {
+      if (username) {
+        // Rename localData cache key to prevent data loss
+        const oldKey = `lv_data_${username}`;
+        const newKey = `lv_data_${trimmed}`;
+        const data = localStorage.getItem(oldKey);
+        if (data) {
+          localStorage.setItem(newKey, data);
+          localStorage.removeItem(oldKey);
+        }
+      }
+
+      // Save current username to global localStorage key
+      localStorage.setItem('username', trimmed);
+
+      // Update active state
+      setUsername(trimmed);
+      setUserProfile(prev => ({ ...prev, name: trimmed }));
+      setShowChangeNameModal(false);
+      addToast(`✏️ Profile name updated successfully to ${trimmed}!`, "success");
+    } catch (e) {
+      console.error("Failed to update profile name", e);
+      addToast("⚠️ Failed to update profile name.", "error");
+    }
   };
 
   const handleStartApp = (name: string) => {
@@ -446,16 +650,17 @@ export default function App() {
     setUsername(name);
   };
 
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'male-plan', label: 'Male Session', icon: UserIcon },
-    { id: 'female-plan', label: 'Female Session', icon: UserIcon },
-    { id: 'home', label: 'Home Session', icon: Home },
-    { id: 'planner', label: 'AI Planner', icon: ClipboardList },
-    { id: 'log', label: 'Training Log', icon: Dumbbell },
+  const handleAddXp = (amount: number) => {
+    setXp(prev => prev + amount);
+  };
+
+  const bottomTabs = [
+    { id: 'logs', label: 'Logs', icon: ClipboardList },
+    { id: 'stats', label: 'Stats', icon: Activity },
+    { id: 'mastery', label: 'Self-Mastery', icon: ShieldCheck },
+    { id: 'sessions', label: 'Sessions', icon: Home },
     { id: 'charts', label: 'Muscle Progress', icon: TrendingUp },
-    { id: 'body', label: 'Stats & BMI', icon: Calculator },
-    { id: 'coach', label: 'AI Coach', icon: Bot },
+    { id: 'planner', label: 'AI Planner', icon: Brain },
   ];
 
   const streak = calculateStreak(workoutData);
@@ -549,9 +754,9 @@ export default function App() {
             </button>
           )}
           <Logo onClick={() => setActiveTab('dashboard')} />
-          <div className="flex items-center gap-1 font-black text-2xl tracking-tighter uppercase hidden sm:flex">
-            <span className="text-[var(--accent)]">LEVEL</span>
-            <span className="text-white">UP</span>
+          <div className="flex items-center font-display text-2xl sm:text-3xl font-black italic tracking-wider uppercase ml-1.5 select-none leading-none">
+            <span className="text-white">Level</span>
+            <span className="text-[var(--red)]">Up</span>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -578,6 +783,14 @@ export default function App() {
             </div>
           )}
           <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setShowNotificationSettings(true)}
+              className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group"
+              title="Smart Reminders"
+            >
+              <Bell size={16} />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--red)] rounded-full animate-pulse" />
+            </button>
             <button 
               onClick={handleChangeName}
               className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
@@ -616,44 +829,106 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="flex border-b-2 border-[var(--border)] bg-[var(--card2)] overflow-x-auto no-scrollbar sticky top-[68px] z-[90]">
-        {tabs.map(tab => {
-          const isFemaleTab = tab.id === 'female-plan';
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "px-6 py-4 flex items-center gap-2 text-[11px] font-display font-black whitespace-nowrap border-b-2 transition-all uppercase tracking-[0.2em]",
-                activeTab === tab.id 
-                  ? isFemaleTab 
-                    ? "text-[#ff69b4] border-[#ff69b4] shadow-[inset_0_-8px_15px_-10px_rgba(255,105,180,0.3)] bg-[#ff69b4]/5"
-                    : "text-[var(--accent)] border-[var(--accent)] shadow-[inset_0_-8px_15px_-10px_var(--accent-glow)] bg-[var(--accent)]/5" 
-                  : isFemaleTab
-                    ? "text-[#ff69b4]/60 border-transparent hover:text-[#ff69b4]"
-                    : "text-[var(--muted)] border-transparent hover:text-white"
-              )}
-            >
-              <tab.icon size={14} className={cn(activeTab === tab.id && "animate-pulse")} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Main Content */}
       <main 
-        className="flex-1 p-5 sm:p-6 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300"
-        data-gender={activeTab === 'female-plan' ? 'female' : userProfile.gender || 'male'}
+        className="flex-1 p-4 sm:p-6 pb-28 sm:pb-32 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300"
+        data-gender={
+          activeTab === 'sessions' && sessionsSubTab === 'female' 
+            ? 'female' 
+            : userProfile.gender || 'male'
+        }
       >
-        {activeTab === 'male-plan' && (
-          <StructuredPlans gender="male" />
+        {activeTab === 'sessions' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Top Switched Segmented Control */}
+            <div className="flex justify-center">
+              <div className="bg-[var(--card2)] p-1.5 rounded-2xl border border-[var(--border)] flex gap-1.5 w-full max-w-xl shadow-xl overflow-x-auto no-scrollbar">
+                {(['male', 'female', 'home', 'animations'] as const).map((tab) => {
+                  const isActive = sessionsSubTab === tab;
+                  const isFemale = tab === 'female';
+                  const isAnimations = tab === 'animations';
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setSessionsSubTab(tab)}
+                      className={cn(
+                        "flex-1 py-3 px-2 rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer select-none whitespace-nowrap",
+                        isActive
+                          ? isFemale
+                            ? "bg-[#ff69b4] text-white shadow-lg shadow-pink-500/20 active-glow"
+                            : isAnimations
+                              ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/25 active-glow"
+                              : "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
+                          : "text-[var(--muted)] hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      {tab === 'male' && <UserIcon size={14} />}
+                      {tab === 'female' && <UserIcon size={14} />}
+                      {tab === 'home' && <Home size={14} />}
+                      {tab === 'animations' && <Activity size={14} />}
+                      {tab === 'male' && "Male Plan"}
+                      {tab === 'female' && "Female Plan"}
+                      {tab === 'home' && "Home Plan"}
+                      {tab === 'animations' && "Motion Guides"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* AI Posture Guard Quick Launch Banner */}
+            <div className="flex justify-center px-4">
+              <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 max-w-sm sm:max-w-md w-full p-4 rounded-2xl flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">Posture Guard</h4>
+                    <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest leading-none mt-0.5">Skeletal Calibration Beta</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPostureModal(true)}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 font-display font-black text-[9px] uppercase tracking-widest text-white rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+                >
+                  Postures Check
+                </button>
+              </div>
+            </div>
+
+            <div className="tab-content transition-all duration-300">
+              {sessionsSubTab === 'male' && <StructuredPlans gender="male" />}
+              {sessionsSubTab === 'female' && <StructuredPlans gender="female" />}
+              {sessionsSubTab === 'home' && <HomeWorkout />}
+              {sessionsSubTab === 'animations' && <ExerciseAnimations />}
+            </div>
+          </div>
         )}
-        {activeTab === 'female-plan' && (
-          <StructuredPlans gender="female" />
+
+        {activeTab === 'charts' && (
+          <MuscleProgressCharts data={workoutData} prs={prs} />
         )}
-        {activeTab === 'dashboard' && (
+
+        {activeTab === 'planner' && (
+          <Planner 
+            userName={userProfile.name || 'Champion'} 
+            onProfileUpdate={handleProfileUpdate}
+            onAddXp={handleAddXp}
+            triggerToast={(msg, type) => addToast(msg, type || 'info')}
+          />
+        )}
+
+        {activeTab === 'mastery' && (
+          <SelfMastery 
+            onAddXp={handleAddXp}
+            triggerToast={(msg, type) => addToast(msg, type || 'info')}
+            hasWorkoutLoggedToday={!!(workoutData[today] && workoutData[today].length > 0)}
+            waterIntakeLiters={(water[today] || 0) * 0.25}
+          />
+        )}
+
+        {activeTab === 'stats' && (
           <Dashboard 
             data={workoutData} 
             profile={userProfile} 
@@ -664,36 +939,160 @@ export default function App() {
             completeMission={completeMission}
           />
         )}
-        {activeTab === 'steps' && (
-          <StepTracker 
-            initialSteps={steps[today] || 0} 
-            onStepsChange={handleStepsChange} 
-          />
-        )}
-        {activeTab === 'log' && (
-          <WorkoutLog 
-            onLog={handleLogWorkout} 
-            todayEntries={workoutData[today] || []} 
-            history={Object.values(workoutData).flat().reverse() as WorkoutEntry[]} 
-            prs={prs}
-          />
-        )}
-        {activeTab === 'charts' && (
-          <MuscleProgressCharts data={workoutData} prs={prs} />
-        )}
-        {activeTab === 'coach' && (
-          <AICoach userName={userProfile.name || 'Champion'} userProfile={userProfile} workoutData={workoutData} />
-        )}
-        {activeTab === 'body' && (
-          <BodyStats profile={userProfile} onUpdate={handleProfileUpdate} />
-        )}
-        {activeTab === 'planner' && (
-          <Planner userName={userProfile.name || 'Champion'} onProfileUpdate={handleProfileUpdate} />
-        )}
-        {activeTab === 'home' && (
-          <HomeWorkout />
+
+        {activeTab === 'logs' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Top Switched Segmented Control for Logs */}
+            <div className="flex justify-center">
+              <div className="bg-[var(--card2)] p-1.5 rounded-2xl border border-[var(--border)] flex gap-1.5 w-full max-w-sm shadow-xl">
+                <button
+                  onClick={() => setLogsSubTab('training')}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer select-none",
+                    logsSubTab === 'training'
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
+                      : "text-[var(--muted)] hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <ClipboardList size={14} />
+                  Training Log
+                </button>
+                <button
+                  onClick={() => setLogsSubTab('bmi')}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer select-none",
+                    logsSubTab === 'bmi'
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
+                      : "text-[var(--muted)] hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Calculator size={14} />
+                  BMI Calculator
+                </button>
+              </div>
+            </div>
+
+            <div className="tab-content transition-all duration-300">
+              {logsSubTab === 'training' && (
+                <WorkoutLog 
+                  onLog={handleLogWorkout} 
+                  todayEntries={workoutData[today] || []} 
+                  history={Object.values(workoutData).flat().reverse() as WorkoutEntry[]} 
+                  prs={prs}
+                  onDeleteEntry={handleDeleteWorkout}
+                  onEditEntry={handleEditWorkout}
+                  fullHistory={workoutData}
+                />
+              )}
+              {logsSubTab === 'bmi' && (
+                <BodyStats profile={userProfile} onUpdate={handleProfileUpdate} />
+              )}
+            </div>
+          </div>
         )}
       </main>
+
+      {/* Floating Action Button (FAB) for AI Coach - Fully Interactive Rounded 3D Companion */}
+      {username && !activeWorkout && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.5, y: 50 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="fixed bottom-[74px] right-2 sm:bottom-24 sm:right-6 z-[180] flex flex-col items-end cursor-pointer"
+          onMouseEnter={() => setFabHovered(true)}
+          onMouseLeave={() => setFabHovered(false)}
+          onClick={() => setShowAICoachModal(true)}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.9, y: 2 }}
+          transition={{ type: "spring", stiffness: 350, damping: 14 }}
+        >
+          <div className="relative group p-2">
+            <span className="absolute inset-x-4 inset-y-4 rounded-full bg-[var(--accent)]/10 animate-ping opacity-25 pointer-events-none" />
+            <AICoachRobot 
+              mode={fabHovered ? 'greeting' : 'idle'} 
+              size={105} 
+              showSpeechBubble={fabHovered}
+              speechText="Coach Ready! 💪"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Floating AI Coach Modal */}
+      <AnimatePresence>
+        {showAICoachModal && (
+          <div className="fixed inset-0 z-[500] flex items-end justify-center sm:items-center sm:justify-end sm:p-6 bg-black/80 backdrop-blur-sm">
+            {/* Backdrop Closer */}
+            <div className="absolute inset-0" onClick={() => setShowAICoachModal(false)} />
+            
+            <motion.div
+              initial={{ opacity: 0, y: 100, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 100, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="w-full max-w-3xl h-[85vh] sm:h-[650px] bg-[var(--bg)] rounded-t-[2.5rem] sm:rounded-[2rem] border-t sm:border border-[var(--border)] shadow-2xl relative overflow-hidden flex flex-col z-[510]"
+            >
+              <button
+                onClick={() => setShowAICoachModal(false)}
+                className="absolute top-5 right-5 z-[550] p-2.5 rounded-2xl bg-[var(--card2)] hover:bg-[var(--border)] text-[var(--muted)] hover:text-white border border-[var(--border)] active:scale-95 transition-all cursor-pointer shadow-md"
+                title="Close AI Coach"
+              >
+                <X size={18} />
+              </button>
+              <div className="flex-1 overflow-hidden h-full">
+                <AICoach 
+                  userName={userProfile.name || 'Champion'} 
+                  userProfile={userProfile} 
+                  workoutData={workoutData} 
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Fixed Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-[190] bg-[var(--card2)]/90 backdrop-blur-md border-t border-[var(--border)] py-1.5 pb-safe px-4 select-none shadow-[0_-10px_30px_rgba(0,0,0,0.6)] flex justify-around items-center">
+        {bottomTabs.map(tab => {
+          const isActive = activeTab === tab.id;
+          const isFemale = activeTab === 'sessions' && sessionsSubTab === 'female';
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex-1 flex flex-col items-center justify-center py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 relative cursor-pointer active:scale-95 group",
+                isActive 
+                  ? isFemale 
+                    ? "text-[#ff69b4] drop-shadow-[0_0_8px_rgba(255,105,180,0.4)]"
+                    : "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent-glow)]" 
+                  : "text-[var(--muted)] hover:text-white"
+              )}
+            >
+              <div className={cn(
+                "p-1.5 rounded-xl transition-all duration-300 mb-0.5 flex items-center justify-center",
+                isActive 
+                  ? isFemale 
+                    ? "bg-[#ff69b4]/10"
+                    : "bg-[var(--accent)]/10" 
+                  : "group-hover:bg-white/5"
+              )}>
+                <tab.icon size={18} className={cn(isActive && "scale-110", "transition-transform duration-300")} />
+              </div>
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-tight whitespace-nowrap">{tab.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="activeBottomTabGlow"
+                  className={cn(
+                    "absolute bottom-0 h-[3px] w-6 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]",
+                    isFemale ? "bg-[#ff69b4]" : "bg-[var(--accent)]"
+                  )}
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Guided Workout Overlay */}
       {activeWorkout && (
@@ -705,7 +1104,7 @@ export default function App() {
         />
       )}
 
-      <footer className="p-4 text-center text-[var(--muted)] text-xs border-t border-[var(--border)] mt-5">
+      <footer className="p-4 text-center text-[var(--muted)] text-[10px] font-bold uppercase tracking-widest border-t border-[var(--border)] mt-5 pb-24">
         LEVELUP ⚡ Data saved locally • Every day adds a new link to your chain
       </footer>
       <AnimatePresence>
@@ -750,6 +1149,173 @@ export default function App() {
            </div>
         )}
       </AnimatePresence>
+
+      {/* Advanced Overlay Modals */}
+      <AnimatePresence>
+        {showNotificationSettings && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md"
+            >
+              <NotificationSettings 
+                onClose={() => setShowNotificationSettings(false)} 
+                triggerToast={addToast} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPostureModal && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="w-full max-w-4xl"
+            >
+              <PostureCheck 
+                onClose={() => setShowPostureModal(false)} 
+                activeExercise={activeWorkout ? activeWorkout.exercise.name : 'Squat'} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showChangeNameModal && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden"
+            >
+              {/* Top boundary accent colored line */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-[var(--accent)]" />
+              
+              <button
+                onClick={() => setShowChangeNameModal(false)}
+                className="absolute top-4 right-4 p-2.5 rounded-xl bg-[var(--card2)] hover:bg-[var(--border)] text-[var(--muted)] hover:text-white transition-all cursor-pointer border border-[var(--border)]"
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-5 mt-2">
+                <div className="w-10 h-10 bg-[var(--accent)]/10 text-[var(--accent)] rounded-xl flex items-center justify-center">
+                  <UserIcon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-display font-black text-white uppercase tracking-tight">Edit Profile Name</h3>
+                  <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-wider">Change your screen name without resetting data</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">DisplayName / Username</label>
+                  <input
+                    type="text"
+                    value={newNameInput}
+                    onChange={(e) => setNewNameInput(e.target.value)}
+                    placeholder="Enter name..."
+                    className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--accent)] transition-all font-bold tracking-wide"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName(newNameInput);
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowChangeNameModal(false)}
+                    className="flex-1 py-3 bg-[var(--card2)] hover:bg-[var(--border)] text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer border border-[var(--border)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSaveName(newNameInput)}
+                    className="flex-1 py-3 bg-[var(--accent)] hover:brightness-110 text-white font-display font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-lg shadow-[var(--accent-glow)]"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Toast Alert Toaster Container */}
+      <div className="fixed top-6 right-6 z-[999] max-w-sm w-full space-y-3 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 50, scale: 0.9 }}
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className={cn(
+                "p-4 rounded-2xl border backdrop-blur-lg flex items-start gap-3 shadow-xl pointer-events-auto cursor-pointer",
+                toast.type === 'success' 
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" 
+                  : toast.type === 'warning'
+                    ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                    : "bg-blue-500/10 border-blue-500/20 text-blue-300"
+              )}
+            >
+              <div className="text-xs font-bold leading-relaxed">{toast.message}</div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Level Up Celebration Card overlay */}
+      <AnimatePresence>
+        {levelUpCelebration && (
+          <div className="fixed inset-0 z-[800] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl">
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0, y: 100 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.7, opacity: 0, y: 100 }}
+              className="bg-gradient-to-b from-[var(--card2)] to-black border-2 border-yellow-400 p-8 rounded-[3rem] text-center max-w-sm w-full shadow-[0_0_50px_rgba(234,179,8,0.3)] relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400" />
+              <div className="text-6xl mb-6 animate-bounce">⚡🎉</div>
+              <h1 className="text-3xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 uppercase tracking-tighter">LVL {levelUpCelebration} REACHED!</h1>
+              <div className="text-[10px] font-black uppercase text-[var(--muted)] tracking-[0.3em] mt-1">Biochemical Limit Shattered</div>
+              
+              <p className="text-xs text-white/95 leading-relaxed mt-6 max-w-xs mx-auto">
+                Sensational effort! Your body mass, sets, and rep totals have successfully compiled past the threshold.
+              </p>
+
+              <div className="my-8 p-4 bg-white/5 border border-white/10 rounded-2xl text-left space-y-2">
+                <div className="text-[9px] font-black uppercase text-yellow-400 tracking-wider">UNLOCKED REWARDS & PERKS:</div>
+                <div className="text-xs text-white/90 font-bold flex items-center gap-2">🟢 +150 Daily Goal Boost Multiplier</div>
+                <div className="text-xs text-white/90 font-bold flex items-center gap-2">🟢 Muscle Symmetry Sensor Access</div>
+                <div className="text-xs text-white/90 font-bold flex items-center gap-2">🟢 Elite Coach Badge Highlight</div>
+              </div>
+
+              <button
+                onClick={() => setLevelUpCelebration(null)}
+                className="w-full py-4 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-yellow-400/20 active:scale-95"
+              >
+                Acknowledge Promotion
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

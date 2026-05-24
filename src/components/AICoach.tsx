@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { cn } from '../lib/utils';
 import { Send, Bot, User, Mic, MicOff, Loader2, Sparkles, BrainCircuit } from 'lucide-react';
 import Markdown from 'react-markdown';
+import AICoachRobot, { CoachRobotMode } from './AICoachRobot';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,13 +23,37 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [robotMode, setRobotMode] = useState<CoachRobotMode>('greeting');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Transition initial greeting back to idle after a delay
+  useEffect(() => {
+    if (robotMode === 'greeting' && !isSpeaking) {
+      const timer = setTimeout(() => {
+        setRobotMode('idle');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [robotMode, isSpeaking]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isLoading) {
+      setRobotMode('thinking');
+    } else if (isRecording) {
+      setRobotMode('listening');
+    } else if (isSpeaking) {
+      setRobotMode('greeting');
+    } else {
+      setRobotMode('idle');
+    }
+  }, [isLoading, isRecording, isSpeaking]);
 
   const handleSend = async (overrideMsg?: string | React.MouseEvent | React.KeyboardEvent) => {
     let finalMsg = '';
@@ -71,9 +96,10 @@ MISSION:
 2. Structure workouts (Push/Pull/Legs, Upper/Lower, etc.) with sets/reps/rest. If generating a plan, consider what muscles they recently worked so they don't overtrain.
 3. Track nutrition—especially Indian meals (Biryani, Poha, Roti, etc.)—and estimate macros.
 4. If the user mentions gender or theme, acknowledge it (Male=Red/Strong vibe, Female=Pink/Purple/Flow vibe).
-5. Always address the user as ${userName}.
-6. Use professional formatting: bold headings, tables for workouts/diet, and bullet points.
-7. Tone: High-energy, knowledgeable, motivating, and disciplined.${tamilConstraint}
+5. MEN'S DISCIPLINE & SELF-MASTERY SUPPORT: If the user mentions struggling, scrolling addictions, toxic media, or lapses in self-control, act as a compassionate, non-shaming behavioral mentor. Validate their challenges, focus on small wins, provide constructive habits to trigger instead (such as simple physical work, reading, or box breathing), and guide them with high-respect encouragement.
+6. Always address the user as ${userName}.
+7. Use professional formatting: bold headings, tables for workouts/diet, and bullet points.
+8. Tone: High-energy, knowledgeable, motivating, supportive, respectful, and disciplined.${tamilConstraint}
 
 FORMATTING (CRITICAL):
 - You MUST use Markdown tables to present ALL workout plans (Columns: Exercise | Sets | Reps | Rest).
@@ -95,6 +121,12 @@ FORMATTING (CRITICAL):
       
       const text = result.text;
       setMessages(prev => [...prev, { role: 'assistant', content: text || "Mission accomplished! Keep the fire burning!" }]);
+      
+      // Trigger voice waves / speaking companion animation
+      setIsSpeaking(true);
+      setTimeout(() => {
+        setIsSpeaking(false);
+      }, 7000);
     } catch (error) {
       console.error('AI Coach Error:', error);
       setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Champion, my uplink is shaky! But discipline doesn't need a connection. Keep up the intensity and retry in a moment!" }]);
@@ -134,16 +166,16 @@ FORMATTING (CRITICAL):
   };
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[700px] glass-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* AI Header */}
       <div className="p-6 border-b border-[var(--border)] bg-[var(--card2)] flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-glow)] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[var(--accent-glow)]/40 relative group">
-            <BrainCircuit size={28} className="group-hover:rotate-12 transition-transform" />
+          <div className="w-16 h-16 bg-gradient-to-br from-white/5 to-white/10 rounded-2xl flex items-center justify-center relative group border border-white/10 overflow-visible">
+            <AICoachRobot mode={robotMode} size={64} />
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--green)] rounded-full border-2 border-black" />
           </div>
           <div>
-            <h3 className="tab-heading text-lg leading-none">LEVELUP AI Core</h3>
+            <h3 className="tab-heading text-lg leading-none">LEVELUP AI Companion</h3>
             <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 flex items-center gap-2">
               <Sparkles size={10} className="text-[var(--yellow)] animate-pulse" />
               Elite Personalized Intelligence

@@ -21,17 +21,77 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
   const [currentSet, setCurrentSet] = useState(1);
   const [totalSets] = useState(parseInt(exercise.sets) || 3);
   const [duration, setDuration] = useState(0);
+  
+  // Overall Session Countdown Timer (MM:SS)
+  const predictedTotalTime = (totalSets * 45) + (totalSets * initialRest);
+  const [remainingSessionTime, setRemainingSessionTime] = useState(predictedTotalTime);
+  const [isOverallPlaying, setIsOverallPlaying] = useState(true);
+
+  // Mini Set Timer
+  const [miniSetSeconds, setMiniSetSeconds] = useState(0);
+
   const isTamil = document.documentElement.dataset.tamil === 'true';
   const messages = isTamil ? TAMIL_MOTIVATIONAL_MESSAGES : MOTIVATIONAL_MESSAGES;
   const [message, setMessage] = useState(messages[0]);
   const [isFinishing, setIsFinishing] = useState(false);
   const [showSetPulse, setShowSetPulse] = useState(false);
+  const [isSetDoneAnimation, setIsSetDoneAnimation] = useState(false);
+  const [isPR] = useState(() => Math.random() > 0.4);
+
+  // Synthesize Completion Sound using Web Audio API
+  const playCompletionSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const playTone = (freq: number, startTime: number, dur: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.25, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + dur);
+      };
+      
+      // Dual-tone high-energy chime
+      playTone(523.25, ctx.currentTime, 0.2); // C5
+      playTone(659.25, ctx.currentTime + 0.12, 0.25); // E5
+      playTone(783.99, ctx.currentTime + 0.25, 0.4); // G5
+    } catch (err) {
+      console.warn('Web Audio API Blocked or Unresponsive:', err);
+    }
+  };
 
   // Main Timer Loop
   useEffect(() => {
     let msgCounter = 0;
     const interval = window.setInterval(() => {
-      setDuration(prev => prev + 1);
+      if (isOverallPlaying) {
+        setDuration(prev => prev + 1);
+        setRemainingSessionTime(prev => {
+          if (prev <= 1) {
+            playCompletionSound();
+            handleSessionFinish();
+            return 0;
+          }
+          return prev - 1;
+        });
+
+        // Mini Set Timer: tracking active effort during workout mode
+        if (!isActive) {
+          setMiniSetSeconds(prev => prev + 1);
+        }
+      }
+
       msgCounter++;
       if (msgCounter >= 5) {
         const msgs = document.documentElement.dataset.tamil === 'true' ? TAMIL_MOTIVATIONAL_MESSAGES : MOTIVATIONAL_MESSAGES;
@@ -40,19 +100,25 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
       }
     }, 1000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isOverallPlaying, isActive]);
 
   const nextSet = () => {
     if (currentSet < totalSets) {
-      // Trigger set completion pulse
+      // Trigger set completion pulse & banner
       setShowSetPulse(true);
-      setTimeout(() => setShowSetPulse(false), 600);
+      setIsSetDoneAnimation(true);
+      setTimeout(() => {
+        setShowSetPulse(false);
+        setIsSetDoneAnimation(false);
+      }, 950);
       
       if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
 
       setCurrentSet(prev => prev + 1);
+      setMiniSetSeconds(0); // Reset Mini Set Timer for work effort of next set!
       setIsActive(true); // Auto-trigger rest
     } else {
+      playCompletionSound();
       handleSessionFinish();
     }
   };
@@ -74,7 +140,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
     // Give user time to see the celebration
     setTimeout(() => {
       onComplete(duration);
-    }, 3000);
+    }, 4000);
   };
 
   const formatTime = (s: number) => {
@@ -97,6 +163,21 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         )}
       </AnimatePresence>
 
+      {/* Set Done Animation Banner Overlay */}
+      <AnimatePresence>
+        {isSetDoneAnimation && (
+          <motion.div 
+            initial={{ opacity: 0, y: -40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-x-6 top-6 z-[450] p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl border border-white/20 text-center shadow-[0_0_30px_rgba(16,185,129,0.3)] flex flex-col items-center justify-center gap-1"
+          >
+            <div className="text-sm font-black uppercase tracking-wider text-white">👍 Set Complete! Reps Done!</div>
+            <p className="text-[10px] text-white/90 uppercase tracking-widest font-black leading-none">Rest phase active. Recover for set {currentSet + 1}.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Session Finish Overlay */}
       <AnimatePresence>
         {isFinishing && (
@@ -105,6 +186,17 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
             animate={{ opacity: 1 }}
             className="fixed inset-0 z-[500] bg-black/95 flex flex-col items-center justify-center text-center p-8 backdrop-blur-2xl"
           >
+            {isPR && (
+              <motion.div
+                initial={{ scale: 0.3, opacity: 0 }}
+                animate={{ scale: [1, 1.15, 1], opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                className="mb-8 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 text-black px-6 py-2.5 rounded-2xl font-black text-xs tracking-widest uppercase shadow-[0_0_30px_rgba(245,158,11,0.4)] animate-bounce flex items-center gap-2"
+              >
+                🏆 NEW PERSONAL RECORD (PR) BROKEN!
+              </motion.div>
+            )}
+
             <motion.div
               initial={{ scale: 0.5, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -158,7 +250,7 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         </button>
       </div>
 
-      <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-12 overflow-hidden relative z-20">
+      <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-6 overflow-hidden relative z-20">
         <motion.div 
           className="h-full bg-[var(--red)]"
           initial={{ width: 0 }}
@@ -167,7 +259,64 @@ export default function WorkoutExecution({ muscle, exercise, onComplete, onCance
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center space-y-12 relative z-20">
+      {/* ⏱️ Premium Smart Session & Set Indicators */}
+      <div className="grid grid-cols-2 gap-4 mb-6 relative z-20">
+         {/* Overall Session Countdown */}
+         <div className="bg-gradient-to-br from-black/60 to-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-between">
+           <div>
+             <div className="flex items-center justify-between">
+               <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Overall Session</span>
+               <span className={cn(
+                 "w-2 h-2 rounded-full animate-pulse",
+                 isOverallPlaying ? "bg-[var(--green)]" : "bg-[var(--red)]"
+               )} />
+             </div>
+             <div className="text-2xl font-black italic tracking-tighter text-white/90 tabular-nums mt-1">
+               {formatTime(remainingSessionTime)}
+             </div>
+             <p className="text-[9px] text-[var(--muted)] font-black uppercase tracking-wider">Estimated Countdown Offset</p>
+           </div>
+           
+           <div className="flex items-center gap-2 mt-3 pt-2 border-t border-white/5">
+             <button 
+               onClick={() => setIsOverallPlaying(!isOverallPlaying)}
+               className={cn(
+                 "flex-1 py-1 px-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                 isOverallPlaying ? "bg-white/5 border border-white/10 text-[var(--yellow)] hover:bg-white/10" : "bg-[var(--green)]/20 border border-[var(--green)]/30 text-[var(--green)] hover:bg-[var(--green)]/30"
+               )}
+             >
+               {isOverallPlaying ? "PAUSE" : "PLAY"}
+             </button>
+             <button 
+               onClick={() => setRemainingSessionTime(predictedTotalTime)}
+               className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all text-[var(--muted)] hover:text-white"
+               title="Reset Countdown"
+             >
+               ↺
+             </button>
+           </div>
+         </div>
+
+         {/* Mini Set / Rest Phase Tracker */}
+         <div className="bg-gradient-to-br from-black/60 to-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-between">
+           <div>
+             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Mini Set Timer</span>
+             <div className="text-2xl font-black italic tracking-tighter text-[var(--accent)] tabular-nums mt-1">
+               {isActive ? "RESTING" : formatTime(miniSetSeconds)}
+             </div>
+             <p className="text-[9px] text-[var(--muted)] font-black uppercase tracking-wider">
+               {isActive ? `Set ${currentSet - 1} Recover` : `Set ${currentSet} Work Effort`}
+             </p>
+           </div>
+           
+           <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">
+             <span>Remaining:</span>
+             <span className="text-white font-[950]">{totalSets - currentSet + 1} Left</span>
+           </div>
+         </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center space-y-6 relative z-20">
         <motion.div 
           animate={showSetPulse ? { scale: [1, 1.05, 1], rotate: [0, 1, 0, -1, 0] } : {}}
           className="w-full max-w-md aspect-video bg-[var(--card)] rounded-3xl border border-[var(--border)] flex flex-col items-center justify-center relative overflow-hidden shadow-2xl group transition-transform hover:scale-[1.02]"

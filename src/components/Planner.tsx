@@ -14,17 +14,22 @@ import {
   Save,
   X,
   Play,
-  Zap
+  Zap,
+  Share2,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CircularTimer from './common/CircularTimer';
+import SessionTimer, { calculateWorkoutDuration } from './common/SessionTimer';
 
 interface PlannerProps {
   userName: string;
   onProfileUpdate: (profile: UserProfile) => void;
+  onAddXp?: (amount: number) => void;
+  triggerToast?: (msg: string, type?: string) => void;
 }
 
-export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
+export default function Planner({ userName, onProfileUpdate, onAddXp, triggerToast }: PlannerProps) {
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('lvProfile');
     return saved ? JSON.parse(saved) : {
@@ -43,6 +48,9 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [daysPerWeek, setDaysPerWeek] = useState(() => localStorage.getItem('lv_daysPerWeek') || '4');
+  const [overtrainingAdjusted, setOvertrainingAdjusted] = useState(false);
+
   const [customSplit, setCustomSplit] = useState('');
   const [isAddingToDay, setIsAddingToDay] = useState<string | null>(null);
   const [newEx, setNewEx] = useState<Exercise>({ name: '', sets: '3', reps: '12', rest: '60s' });
@@ -50,6 +58,51 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
   
   // Timer State
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  // Social Sharing State
+  const [sharingDay, setSharingDay] = useState<DayPlan | null>(null);
+  const [customSnippetText, setCustomSnippetText] = useState('');
+  const [snippetPreset, setSnippetPreset] = useState<'standard' | 'minimal' | 'story'>('standard');
+
+  const generateShareSnippet = (day: DayPlan, type: 'standard' | 'minimal' | 'story'): string => {
+    const intensity = profile.level ? profile.level.toUpperCase() : 'BEGINNER';
+    if (day.rest) {
+      if (type === 'story') {
+        return `🔋 REST DAY VIBES 💧\n${day.day} is for recovery!\n\nResting to grow stronger.\n#LevelUp #Fitness`;
+      }
+      if (type === 'minimal') {
+        return `Rest Day: Active Recovery (Walk, stretch & hydrate).`;
+      }
+      return `🔋 LevelUp Active Recovery Day — ${day.day} 🔋\nFocus: Rest\nRecovery Guide: Walk 20-30m, Stretch, and Hydrate 💧\n\nResting to grow stronger! #LevelUp #Fitness\nJoin me on LevelUp! 🚀💪`;
+    }
+
+    const durationMin = day.exercises ? Math.round(calculateWorkoutDuration(day.exercises) / 60) : 0;
+    
+    if (type === 'story') {
+      return `⚡ TODAY'S GRIND ⚡\nDay: ${day.day}\nFocus: ${day.focus} (${intensity})\nTime: ~${durationMin} mins\n\nNo excuses. Leveling up! 🚀💪\n#LevelUp #Fitness`;
+    }
+    
+    if (type === 'minimal') {
+      return `Workout Completed! ✅\n${day.day} - ${day.focus} (${durationMin} min).`;
+    }
+
+    let exerciseList = '';
+    if (day.exercises && day.exercises.length > 0) {
+      exerciseList = day.exercises.map(ex => `• ${ex.name}: ${ex.sets}x${ex.reps} (Rest: ${ex.rest})`).join('\n');
+    }
+
+    return `⚡ LevelUp Workout Summary — ${day.day} ⚡\nFocus: ${day.focus} (${intensity} Intensity)\nEstimated Duration: ~${durationMin} mins\n\n🔥 Exercises:\n${exerciseList}\n\nLevelUp your training! #LevelUp #Fitness\nJoin me on LevelUp! 🚀💪`;
+  };
+
+  useEffect(() => {
+    if (sharingDay) {
+      setCustomSnippetText(generateShareSnippet(sharingDay, snippetPreset));
+    }
+  }, [sharingDay, snippetPreset]);
+
+  useEffect(() => {
+    localStorage.setItem('lv_daysPerWeek', daysPerWeek);
+  }, [daysPerWeek]);
 
   useEffect(() => {
     localStorage.setItem('lvGeneratedPlan', JSON.stringify(weeklyPlan));
@@ -89,6 +142,15 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
     let generatedSplit: DayPlan[] = [];
+    let adjusted = false;
+
+    // Strict safety check for extreme plans
+    let targetActiveDays = Number(daysPerWeek);
+    if (targetActiveDays >= 6 || level === 'advanced') {
+      targetActiveDays = 5; // Cap at 5 days max to prevent muscle/joint burnout
+      adjusted = true;
+    }
+    setOvertrainingAdjusted(adjusted);
 
     if (customSplit.trim()) {
       const lines = customSplit.split('\n').filter(l => l.trim());
@@ -108,10 +170,23 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
         return { day, focus, rest: isRest, exercises: exercises.map(ex => ({...ex})) };
       });
     } else {
-      const defaultMuscles = ['Chest', 'Back', 'Legs', 'Shoulder', 'Arms', 'Full Body', 'Rest'];
+      const defaultMuscles = ['Chest', 'Back', 'Legs', 'Shoulder', 'Arms', 'Full Body'];
+      let activeIndex = 0;
+      
       generatedSplit = days.map((day, i) => {
-        const muscle = defaultMuscles[i];
-        const isRest = muscle === 'Rest';
+        // Enforce rest days to meet the target day counts safely
+        let isRest = false;
+        if (targetActiveDays === 3 && (i === 2 || i === 4 || i === 6)) isRest = true;
+        else if (targetActiveDays === 4 && (i === 2 || i === 5 || i === 6)) isRest = true;
+        else if (targetActiveDays === 5 && (i === 2 || i === 6)) isRest = true;
+        else if (targetActiveDays <= 2 && i !== 0 && i !== 4) isRest = true;
+
+        let muscle = 'Rest';
+        if (!isRest) {
+          muscle = defaultMuscles[activeIndex % defaultMuscles.length];
+          activeIndex++;
+        }
+
         return {
           day,
           focus: muscle,
@@ -146,6 +221,15 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
 
   const startTimer = (seconds: number) => {
     setTimeLeft(seconds);
+  };
+
+  const handleSessionTimerComplete = (dayName: string) => {
+    if (triggerToast) {
+      triggerToast(`✅ ${dayName} Workout Complete! Great job!`, 'success');
+    }
+    if (onAddXp) {
+      onAddXp(50);
+    }
   };
 
   const calculateNutrition = () => {
@@ -261,6 +345,8 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
                  <div className="space-y-2">
                   <label className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Days/Week</label>
                   <select 
+                    value={daysPerWeek}
+                    onChange={(e) => setDaysPerWeek(e.target.value)}
                     className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-xl p-3 text-white focus:border-[var(--red)] outline-none font-bold text-sm h-[46px]"
                   >
                     <option value="3">3 Days</option>
@@ -297,6 +383,18 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
       {/* Plan Output */}
       {weeklyPlan.length > 0 && (
         <div className="space-y-12 animate-in fade-in duration-700">
+            {overtrainingAdjusted && (
+              <div className="p-5 bg-yellow-500/10 border-2 border-yellow-500/20 rounded-3xl flex items-start gap-4 animate-in fade-in zoom-in-95 duration-500">
+                <span className="text-2xl mt-1 shrink-0">⚠️</span>
+                <div>
+                  <div className="text-sm font-black uppercase text-yellow-400 tracking-wider">Plan Adjusted to Avoid Overtraining</div>
+                  <p className="text-xs text-white/80 leading-relaxed mt-1">
+                    Your training configuration (6 days/week or Advanced status) demands intense joint and CNS fatigue management. To protect muscle preservation and structural security, your coach plan was dynamically adjusted to insert complete 48H weekly rest allocations avoiding overtraining syndrome.
+                  </p>
+                </div>
+              </div>
+            )}
+
            {/* Nutrition Summary */}
            <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 sm:p-8">
               <h3 className="tab-heading text-white italic mb-6">🥗 Personalised Nutrition Guide</h3>
@@ -325,21 +423,48 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
               <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
                  {weeklyPlan.map((day, dIdx) => (
                     <div key={day.day} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm hover:border-[var(--red)]/50 transition-all group">
-                       <div className="p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] bg-black/10">
-                          <div className="flex items-center gap-6">
-                             <div className="text-sm font-black text-[var(--red)] uppercase tracking-[0.2em] w-20">{day.day}</div>
-                             <div className="flex flex-col">
-                                <div className="text-xl font-display text-white uppercase italic tracking-wider group-hover:text-[var(--red)] transition-colors">{day.focus}</div>
-                                {!day.rest && <div className="text-[10px] text-[var(--muted)] uppercase font-bold tracking-widest mt-1 italic">{day.exercises?.length} EXERCISES LOADED</div>}
+                       <div className="p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] bg-black/10">
+                          
+                          {/* Left layout with Title + SessionTimer */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 flex-1 min-w-0">
+                             <div className="flex items-center gap-6">
+                                <div className="text-sm font-black text-[var(--red)] uppercase tracking-[0.2em] w-20">{day.day}</div>
+                                <div className="flex flex-col">
+                                   <div className="text-xl font-display text-white uppercase italic tracking-wider group-hover:text-[var(--red)] transition-colors">{day.focus}</div>
+                                   {!day.rest && <div className="text-[10px] text-[var(--muted)] uppercase font-bold tracking-widest mt-1 italic">{day.exercises?.length} EXERCISES LOADED</div>}
+                                </div>
                              </div>
+
+                             {/* Unified Day Workouts Session Timer */}
+                             {!day.rest && day.exercises && day.exercises.length > 0 && (
+                                <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                                   <SessionTimer 
+                                      totalTime={calculateWorkoutDuration(day.exercises)}
+                                      onComplete={() => handleSessionTimerComplete(day.day)}
+                                      dayName={day.day}
+                                   />
+                                </div>
+                             )}
                           </div>
-                          <div className="flex items-center gap-2">
+
+                          {/* Action Buttons Right Wrapper */}
+                          <div className="flex items-center gap-2 shrink-0">
                              <button 
                                 onClick={() => setIsAddingToDay(day.day)}
                                 className="p-2 rounded-xl bg-[var(--sub)] border border-[var(--border)] hover:text-white hover:border-white transition-all text-[var(--muted)]"
                                 title="Add custom exercise"
                              >
                                 <Plus size={18} />
+                             </button>
+                             <button 
+                                onClick={() => {
+                                   setSharingDay(day);
+                                   setSnippetPreset('standard');
+                                }}
+                                className="p-2 rounded-xl bg-[var(--sub)] border border-[var(--border)] hover:text-white hover:border-white transition-all text-[var(--muted)]"
+                                title="Export workout snippet for Social Media"
+                             >
+                                <Share2 size={18} />
                              </button>
                              {day.rest ? (
                                 <span className="bg-white/5 text-[var(--muted)] text-[10px] font-black uppercase tracking-widest py-1.5 px-4 rounded-full border border-white/5 italic">REST DAY</span>
@@ -487,6 +612,106 @@ export default function Planner({ userName, onProfileUpdate }: PlannerProps) {
               onClose={() => setTimeLeft(null)}
               onComplete={() => setTimeLeft(null)}
             />
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Workout Snippet Modal */}
+      <AnimatePresence>
+        {sharingDay && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[var(--card)] border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative overflow-hidden"
+            >
+              {/* Background Glow */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--red)]/10 rounded-full blur-2xl -mr-16 -mt-16" />
+              
+              <button 
+                onClick={() => setSharingDay(null)} 
+                className="absolute top-4 right-4 text-[var(--muted)] hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <Share2 className="text-[var(--red)]" size={24} />
+                <div>
+                  <h3 className="text-xl font-display text-white uppercase italic tracking-wider">Social Media Snippet</h3>
+                  <p className="text-[9px] text-[var(--muted)] uppercase font-black tracking-wider">Generate & customize shareable status</p>
+                </div>
+              </div>
+
+              {/* Presets Toggle Row */}
+              <div className="grid grid-cols-3 gap-2 bg-black/30 p-1 rounded-xl border border-white/5 mb-5">
+                {(['standard', 'story', 'minimal'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setSnippetPreset(type)}
+                    className={cn(
+                      "py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                      snippetPreset === type 
+                        ? "bg-[var(--red)] text-white shadow-md" 
+                        : "text-[var(--muted)] hover:text-white"
+                    )}
+                  >
+                    {type === 'standard' && 'Detailed'}
+                    {type === 'story' && 'Story Style'}
+                    {type === 'minimal' && 'Minimal'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Snippet Preview Textarea */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest pl-1 flex items-center justify-between">
+                  <span>Snippet Content (Editable)</span>
+                  <span className="text-[var(--red)] font-mono">{customSnippetText.length} chars</span>
+                </label>
+                <div className="bg-black/40 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all">
+                  <textarea
+                    value={customSnippetText}
+                    onChange={(e) => setCustomSnippetText(e.target.value)}
+                    className="w-full text-xs text-white bg-transparent border-0 outline-none resize-none font-mono min-h-[160px] leading-relaxed"
+                    placeholder="Enter customized status..."
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    try {
+                      navigator.clipboard.writeText(customSnippetText);
+                      if (triggerToast) {
+                        triggerToast("🚀 Workout snippet copied to clipboard! Share on social media.", "success");
+                      }
+                    } catch (err) {
+                      if (triggerToast) {
+                        triggerToast("⚠️ Clipboard permission denied. Drag & select text below to copy.", "error");
+                      }
+                    }
+                  }}
+                  className="py-3 px-4 rounded-xl bg-white text-black hover:bg-neutral-200 transition-all font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                >
+                  <Copy size={14} /> Copy to Clipboard
+                </button>
+                
+                <button
+                  onClick={() => setSharingDay(null)}
+                  className="py-3 px-4 rounded-xl bg-[var(--sub)] border border-[var(--border)] text-white hover:border-white transition-all font-display font-black text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+
+              <div className="mt-4 text-[9px] text-center text-[var(--muted)] uppercase font-semibold italic">
+                Tips: Copy and paste to Instagram Bio, Twitter, WhatsApp, or Facebook 🎯
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
