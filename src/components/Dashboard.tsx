@@ -8,7 +8,8 @@ import { WorkoutEntry, UserProfile, DailyMission } from '../types';
 import { cn } from '../lib/utils';
 import { 
   ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target, 
-  CheckCircle2, Share2, Copy, Sparkles, Check, Brain, Wind, Play, Shield, Award 
+  CheckCircle2, Share2, Copy, Sparkles, Check, Brain, Wind, Play, Shield, Award,
+  Github, Linkedin, Instagram, Code
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -1081,6 +1082,194 @@ export default function Dashboard({
           </div>
         </div>
       </div>
+
+      {/* 🚀 Premium Branded End Screen Section by Kathiravan */}
+      <motion.div 
+        initial={{ opacity: 0, y: 35 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-14 pt-12 border-t border-white/5 space-y-12"
+      >
+        {/* Section Identity */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[var(--accent)]/15 text-[var(--accent)] rounded-full border border-[var(--accent)]/20 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-widest font-mono">Discipline Protocol</span>
+          </div>
+          <h2 className="text-3xl font-display font-black tracking-tighter text-white uppercase italic">
+            🚀 Built for Discipline
+          </h2>
+          <div className="text-xs sm:text-sm font-bold text-neutral-400 font-mono tracking-wide">
+            LevelUp System by <span className="text-white hover:text-[var(--accent)] transition-colors duration-200">Kathiravan</span>
+          </div>
+          <p className="text-xs text-[var(--muted)] max-w-md mx-auto leading-relaxed italic">
+            "Transform your body. Master your mind. Control your life."
+          </p>
+        </div>
+
+        {/* Highlighted Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
+          {/* Creator Profile Card */}
+          <motion.div
+            whileHover={{ 
+              scale: 1.03, 
+              boxShadow: "0 20px 45px -15px rgba(59, 130, 246, 0.3)",
+              borderColor: "rgba(59, 130, 246, 0.45)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0e0e11] to-[#050507] border border-white/[0.06] rounded-[2rem] p-6 lg:p-8 backdrop-blur-md flex flex-col justify-between shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+          >
+            {/* Soft background glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-500" />
+            
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
+                  <Code size={20} />
+                </div>
+                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono">
+                  👨‍💻 About the Developer
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-2xl font-display font-black text-white tracking-tight uppercase italic group-hover:text-blue-400 transition-colors duration-300">
+                  Kathiravan
+                </h3>
+                <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                  Developer, creator, and builder of systems focused on discipline, self-control, and performance optimization.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <a
+                href="https://kathir-star.github.io/portfolio_kathiravan/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-mono font-black text-[10px] uppercase tracking-widest transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 cursor-pointer"
+              >
+                View Portfolio ↗
+              </a>
+            </div>
+          </motion.div>
+
+          {/* Project Showcase Card */}
+          <motion.div
+            whileHover={{ 
+              scale: 1.03, 
+              boxShadow: "0 20px 45px -15px rgba(168, 85, 247, 0.3)",
+              borderColor: "rgba(168, 85, 247, 0.45)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0e0e11] to-[#050507] border border-white/[0.06] rounded-[2rem] p-6 lg:p-8 backdrop-blur-md flex flex-col justify-between shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+          >
+            {/* Soft background glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-500" />
+            
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-300">
+                  <Sparkles size={20} />
+                </div>
+                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono">
+                  ⚡ Featured System
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h3 className="text-2xl font-display font-black text-white tracking-tight uppercase italic group-hover:text-purple-400 transition-colors duration-300">
+                    Chronix Flow
+                  </h3>
+                  <span className="text-[9px] font-mono tracking-widest font-bold uppercase text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded border border-[var(--accent)]/15">
+                    Productivity
+                  </span>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-purple-400 font-mono mt-0.5">
+                  Smart Productivity Engine
+                </p>
+                <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                  A powerful task management and productivity system designed to help you stay focused and execute consistently.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <a
+                href="https://kathir-star.github.io/chronix_Flow/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-mono font-black text-[10px] uppercase tracking-widest transition-all duration-200 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 cursor-pointer"
+              >
+                Explore Chronix Flow ↗
+              </a>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Social Connect Row */}
+        <div className="glass-card bg-[#0a0a0d]/60 border border-white/[0.05] rounded-[1.5rem] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+              <span>🌐</span>
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase text-white tracking-widest">Connect</h4>
+              <p className="text-[9px] text-[var(--muted)] font-mono uppercase tracking-wider mt-0.5">Instant channels of execution and builds</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            {[
+              {
+                name: "GitHub",
+                link: "https://github.com/Kathir-star",
+                icon: <Github size={14} />,
+                color: "hover:bg-neutral-800 hover:border-neutral-700 hover:text-white"
+              },
+              {
+                name: "LinkedIn",
+                link: "https://www.linkedin.com/in/kathiravan-v-160555395",
+                icon: <Linkedin size={14} />,
+                color: "hover:bg-[#0077b5]/10 hover:border-[#0077b5]/30 hover:text-[#0077b5]"
+              },
+              {
+                name: "Instagram",
+                link: "https://www.instagram.com/_kathir_offlx/",
+                icon: <Instagram size={14} />,
+                color: "hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400"
+              }
+            ].map((social) => (
+              <motion.a
+                key={social.name}
+                href={social.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileTap={{ scale: 0.92, y: -2 }}
+                whileHover={{ scale: 1.05 }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.06] bg-black/45 text-neutral-400 text-xs font-bold font-mono uppercase tracking-widest transition-all duration-300 min-h-[40px] cursor-pointer",
+                  social.color
+                )}
+              >
+                {social.icon}
+                <span>{social.name}</span>
+              </motion.a>
+            ))}
+          </div>
+        </div>
+
+        {/* Subtle Footer Line */}
+        <div className="text-center pt-4 pb-2">
+          <p className="text-[10px] sm:text-xs text-[var(--muted)] font-black uppercase tracking-widest">
+            LevelUp isn’t just fitness — it’s a system for life. 🔥
+          </p>
+        </div>
+      </motion.div>
 
       {/* 🧘 Reset Mind Fullscreen Immersive Breathing Overlay Modal */}
       <AnimatePresence>

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 interface NotificationSettingsProps {
   onClose: () => void;
   triggerToast: (msg: string) => void;
+  onForceUpdate: () => void;
 }
 
 export interface SessionNotification {
@@ -40,7 +41,7 @@ const triggerHaptic = () => {
   }
 };
 
-export default function NotificationSettings({ onClose, triggerToast }: NotificationSettingsProps) {
+export default function NotificationSettings({ onClose, triggerToast, onForceUpdate }: NotificationSettingsProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'settings'>('feed');
   const [isMobile, setIsMobile] = useState(false);
   
@@ -621,6 +622,28 @@ export default function NotificationSettings({ onClose, triggerToast }: Notifica
                 <p className="text-[9.5px] text-white/90 leading-relaxed font-semibold">
                   Tap Mobile Browser <span className="text-indigo-300 font-bold">Add to Home Screen</span> for standalone native push triggers.
                 </p>
+              </div>
+
+              {/* FORCE CACHE CLEAR & HARDFLUSH TROUBLESHOOT */}
+              <div className="p-4 bg-neutral-900 border border-[var(--border)] rounded-[1.5rem] space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <RefreshCw size={12} className="text-[var(--red)] animate-spin" style={{ animationDuration: '4s' }} />
+                  <span className="text-[9.5px] font-black uppercase text-white tracking-wider">Troubleshoot Version</span>
+                </div>
+                <p className="text-[9px] text-[var(--muted)] leading-relaxed font-semibold">
+                  If the app did not update correctly after reinstalling on your phone, force clear browser caches and reload live assets.
+                </p>
+                <button
+                  onClick={() => {
+                    const confirmed = window.confirm("This will clear cached app screens and perform a high-speed hard reload to fetch the latest version. Proceed?");
+                    if (confirmed) {
+                      onForceUpdate();
+                    }
+                  }}
+                  className="w-full py-2 bg-white/5 hover:bg-white/10 active:scale-95 text-white font-black text-[9px] uppercase tracking-widest rounded-xl border border-white/5 transition-all cursor-pointer text-center"
+                >
+                  Force Purge Cache & Update
+                </button>
               </div>
             </div>
 

@@ -141,7 +141,7 @@ function WelcomeScreen({ onStart }: { onStart: (name: string) => void }) {
   );
 }
 
-const CURRENT_VERSION = "1.0.0";
+const CURRENT_VERSION = "1.1.0";
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -347,7 +347,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('update') === 'true' || params.get('trigger_update') === 'true') {
       setUpdateDetails({
-        version: "1.1.0",
+        version: "1.2.0",
         message: "New version available! Slashed weight records, added advanced sleep graphs and hydrated water interval logs."
       });
     }
@@ -355,7 +355,7 @@ export default function App() {
     const handleServiceWorkerMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'TRIGGER_FORCE_UPDATE') {
         setUpdateDetails({
-          version: "1.1.0",
+          version: "1.2.0",
           message: "A new background update was received. Please update to see the latest workouts!"
         });
       }
@@ -1478,6 +1478,7 @@ export default function App() {
           <NotificationSettings 
             onClose={() => setShowNotificationSettings(false)} 
             triggerToast={addToast} 
+            onForceUpdate={forceUpdateApp}
           />
         )}
       </AnimatePresence>
