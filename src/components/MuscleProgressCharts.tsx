@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { WorkoutEntry } from '../types';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts';
-import { TrendingUp, Award, BarChart3, HelpCircle, Dumbbell, Zap } from 'lucide-react';
+import { TrendingUp, Award, BarChart3, HelpCircle, Dumbbell, Zap, ZoomIn, Search } from 'lucide-react';
 import { cn } from '../lib/utils';
+import D3ZoomableChart from './D3ZoomableChart';
 
 interface MuscleProgressChartsProps {
   data: Record<string, WorkoutEntry[]>;
@@ -10,7 +11,19 @@ interface MuscleProgressChartsProps {
 }
 
 export default function MuscleProgressCharts({ data, prs }: MuscleProgressChartsProps) {
+  const [inspectingMuscle, setInspectingMuscle] = useState<string | null>(null);
   const allEntries = useMemo(() => Object.values(data).flat(), [data]);
+
+  const selectedMuscleEntries = useMemo(() => {
+    if (!inspectingMuscle) return [];
+    return allEntries.filter(e => {
+      let m = e.muscle?.trim();
+      if (!m) return false;
+      let normalized = m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
+      if (normalized === 'Shoulder') normalized = 'Shoulders';
+      return normalized === inspectingMuscle;
+    });
+  }, [allEntries, inspectingMuscle]);
 
   const muscleStats = useMemo(() => {
     const stats: Record<string, { sessions: number; maxWeight: number; totalVolume: number; history: { date: string; weight: number }[] }> = {};
@@ -245,7 +258,18 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
                 </div>
 
                 {/* Line graph container */}
-                <div className="h-32 w-full relative mb-4 flex items-center justify-center">
+                <div 
+                  onClick={() => hasLogs && setInspectingMuscle(m)}
+                  className={cn(
+                    "h-32 w-full relative mb-1.5 flex items-center justify-center rounded-2xl transition-all duration-300",
+                    hasLogs && "cursor-zoom-in hover:bg-white/[0.02] border border-transparent hover:border-white/5 group/chart"
+                  )}
+                >
+                  {hasLogs && (
+                    <div className="absolute top-1 right-1 z-10 opacity-0 group-hover/chart:opacity-100 transition-opacity bg-black/85 border border-white/10 text-[8px] font-mono font-black uppercase tracking-widest px-2 py-1 rounded-lg text-[var(--accent)] flex items-center gap-1 select-none pointer-events-none shadow-xl">
+                      <ZoomIn size={10} /> Zoom & Pan
+                    </div>
+                  )}
                   {hasLogs ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={s.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -279,6 +303,16 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
                     </div>
                   )}
                 </div>
+
+                {hasLogs && (
+                  <button 
+                    onClick={() => setInspectingMuscle(m)}
+                    className="w-full mb-3.5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 rounded-xl text-[9px] font-mono font-black uppercase tracking-widest transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <ZoomIn size={12} className="text-[var(--accent)] animate-pulse" />
+                    Interactive Zoom-Pan PRs ↗
+                  </button>
+                )}
               </div>
 
               {/* Footer row inside the card */}
@@ -326,6 +360,83 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
            </ResponsiveContainer>
         </div>
       </div>
+
+      {/* D3 ZOOM & PAN WORKSPACE INSPECTOR MODAL */}
+      {inspectingMuscle && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[1000] flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-300">
+          <div className="bg-[#0b0b0e] w-full max-w-4xl rounded-3xl border border-white/[0.08] p-4 sm:p-6 md:p-8 flex flex-col gap-6 relative shadow-2xl my-auto animate-in zoom-in-95 duration-300">
+            {/* Direct Tooltip Dismiss Close Button */}
+            <button 
+              onClick={() => setInspectingMuscle(null)}
+              className="absolute top-4 right-4 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white border border-white/5 active:scale-95 transition-all cursor-pointer z-[1010] flex items-center justify-center shadow-lg animate-in"
+              title="Close Workspace"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* D3 Zoom Component Wrapper */}
+            <D3ZoomableChart 
+              muscleName={inspectingMuscle}
+              entries={selectedMuscleEntries}
+              onClose={() => setInspectingMuscle(null)}
+            />
+
+            {/* Precision PR History Log Table */}
+            <div className="border-t border-white/5 pt-4">
+              <h4 className="text-xs font-black uppercase tracking-wider text-neutral-400 mb-3 flex items-center gap-1.5">
+                <Search size={14} className="text-[var(--accent)]" />
+                Comprehensive historical logs for {inspectingMuscle} ({selectedMuscleEntries.length} total sets)
+              </h4>
+              
+              <div className="max-h-[180px] overflow-y-auto bg-black/20 rounded-2xl border border-white/5">
+                <table className="w-full text-left border-collapse font-mono text-xs">
+                  <thead className="bg-[#0e0e12] text-neutral-400 font-black uppercase text-[9px] tracking-wider sticky top-0 border-b border-white/5">
+                    <tr>
+                      <th className="px-4 py-3">Exercise Name</th>
+                      <th className="px-4 py-3 text-center">Weight</th>
+                      <th className="px-4 py-3 text-center">Sets × Reps</th>
+                      <th className="px-4 py-3 text-right">Date Logged</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.03]">
+                    {[...selectedMuscleEntries]
+                      .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((log, index) => (
+                        <tr 
+                          key={index} 
+                          className={cn(
+                            "hover:bg-white/[0.01] transition-colors",
+                            log.isPR ? "bg-[var(--yellow)]/5 text-white font-bold" : "text-neutral-300"
+                          )}
+                        >
+                          <td className="px-4 py-3 font-semibold text-white/90">
+                            {log.exerciseName || 'Strength Exercise'}
+                            {log.isPR && (
+                              <span className="ml-2 text-[8px] font-black uppercase bg-[var(--yellow)]/10 text-[var(--yellow)] px-1.5 py-0.5 rounded border border-[var(--yellow)]/20 shadow-xs">
+                                🏆 PEAK PR
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center font-black text-white">
+                            {log.weight}kg
+                          </td>
+                          <td className="px-4 py-3 text-center text-neutral-400 font-black">
+                            {log.sets} × {log.reps}
+                          </td>
+                          <td className="px-4 py-3 text-right text-neutral-500 font-semibold uppercase text-[10px] tracking-wider">
+                            {new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

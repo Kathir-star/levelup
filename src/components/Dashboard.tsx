@@ -50,6 +50,12 @@ interface DailyActivity {
   exercisesCount: number;
 }
 
+const sectionTitleCls = "text-3xl sm:text-4xl font-display font-black tracking-widest text-white uppercase italic leading-tight";
+const subTitleCls = "text-xs sm:text-sm font-bold text-neutral-400 font-mono tracking-widest leading-relaxed";
+const taglineCls = "text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto leading-relaxed tracking-wide italic";
+const cardTitleCls = "text-2xl font-display font-black text-white tracking-widest uppercase italic leading-snug group-hover:text-blue-400 transition-colors duration-300";
+const cardBodyCls = "text-xs sm:text-sm text-neutral-400 leading-relaxed sm:leading-loose tracking-wide font-medium";
+
 export default function Dashboard({ 
   data, 
   profile, 
@@ -1089,67 +1095,70 @@ export default function Dashboard({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-14 pt-12 border-t border-white/5 space-y-12"
+        className="mt-20 pt-16 border-t border-white/5 space-y-16"
       >
         {/* Section Identity */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[var(--accent)]/15 text-[var(--accent)] rounded-full border border-[var(--accent)]/20 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-widest font-mono">Discipline Protocol</span>
+        <div className="text-center space-y-5 px-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 shadow-lg shadow-blue-500/5">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest font-mono">Discipline Protocol</span>
           </div>
-          <h2 className="text-3xl font-display font-black tracking-tighter text-white uppercase italic">
+          
+          <h2 className={sectionTitleCls}>
             🚀 Built for Discipline
           </h2>
-          <div className="text-xs sm:text-sm font-bold text-neutral-400 font-mono tracking-wide">
-            LevelUp System by <span className="text-white hover:text-[var(--accent)] transition-colors duration-200">Kathiravan</span>
+          
+          <div className={subTitleCls}>
+            LevelUp System by <span className="text-white border-b border-white/20 pb-0.5 hover:text-blue-400 hover:border-blue-400/40 transition-colors duration-200">Kathiravan</span>
           </div>
-          <p className="text-xs text-[var(--muted)] max-w-md mx-auto leading-relaxed italic">
+          
+          <p className={taglineCls}>
             "Transform your body. Master your mind. Control your life."
           </p>
         </div>
 
         {/* Highlighted Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* Creator Profile Card */}
           <motion.div
             whileHover={{ 
-              scale: 1.03, 
-              boxShadow: "0 20px 45px -15px rgba(59, 130, 246, 0.3)",
-              borderColor: "rgba(59, 130, 246, 0.45)"
+              scale: 1.02, 
+              boxShadow: "0 25px 50px -12px rgba(59, 130, 246, 0.25)",
+              borderColor: "rgba(59, 130, 246, 0.4)"
             }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="group relative overflow-hidden bg-gradient-to-b from-[#0e0e11] to-[#050507] border border-white/[0.06] rounded-[2rem] p-6 lg:p-8 backdrop-blur-md flex flex-col justify-between shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-[2.25rem] p-8 md:p-10 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_40px_rgba(0,0,0,0.6)] min-h-[380px]"
           >
             {/* Soft background glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-500" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-500" />
             
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
-                  <Code size={20} />
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 group-hover:bg-blue-500/20 transition-all duration-300 shadow-md">
+                  <Code size={24} />
                 </div>
-                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono">
+                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
                   👨‍💻 About the Developer
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <h3 className="text-2xl font-display font-black text-white tracking-tight uppercase italic group-hover:text-blue-400 transition-colors duration-300">
+              <div className="space-y-4">
+                <h3 className={cardTitleCls}>
                   Kathiravan
                 </h3>
-                <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                <p className={cardBodyCls}>
                   Developer, creator, and builder of systems focused on discipline, self-control, and performance optimization.
                 </p>
               </div>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-10 pt-4">
               <a
                 href="https://kathir-star.github.io/portfolio_kathiravan/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-mono font-black text-[10px] uppercase tracking-widest transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 cursor-pointer"
+                className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 cursor-pointer"
               >
                 View Portfolio ↗
               </a>
@@ -1159,51 +1168,51 @@ export default function Dashboard({
           {/* Project Showcase Card */}
           <motion.div
             whileHover={{ 
-              scale: 1.03, 
-              boxShadow: "0 20px 45px -15px rgba(168, 85, 247, 0.3)",
-              borderColor: "rgba(168, 85, 247, 0.45)"
+              scale: 1.02, 
+              boxShadow: "0 25px 50px -12px rgba(168, 85, 247, 0.25)",
+              borderColor: "rgba(168, 85, 247, 0.4)"
             }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="group relative overflow-hidden bg-gradient-to-b from-[#0e0e11] to-[#050507] border border-white/[0.06] rounded-[2rem] p-6 lg:p-8 backdrop-blur-md flex flex-col justify-between shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-[2.25rem] p-8 md:p-10 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_40px_rgba(0,0,0,0.6)] min-h-[380px]"
           >
             {/* Soft background glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-500" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-500" />
             
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-300">
-                  <Sparkles size={20} />
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-105 group-hover:bg-purple-500/20 transition-all duration-300 shadow-md">
+                  <Sparkles size={24} />
                 </div>
-                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono">
+                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
                   ⚡ Featured System
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <h3 className="text-2xl font-display font-black text-white tracking-tight uppercase italic group-hover:text-purple-400 transition-colors duration-300">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className={cardTitleCls}>
                     Chronix Flow
                   </h3>
-                  <span className="text-[9px] font-mono tracking-widest font-bold uppercase text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded border border-[var(--accent)]/15">
+                  <span className="text-[10px] font-mono tracking-widest font-black uppercase text-[var(--accent)] bg-[var(--accent)]/10 px-2.5 py-1 rounded-md border border-[var(--accent)]/20 shadow-sm">
                     Productivity
                   </span>
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-purple-400 font-mono mt-0.5">
+                <p className="text-xs font-black uppercase tracking-widest text-purple-400 font-mono mt-1">
                   Smart Productivity Engine
                 </p>
-                <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                <p className={cardBodyCls}>
                   A powerful task management and productivity system designed to help you stay focused and execute consistently.
                 </p>
               </div>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-10 pt-4">
               <a
                 href="https://kathir-star.github.io/chronix_Flow/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-mono font-black text-[10px] uppercase tracking-widest transition-all duration-200 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 cursor-pointer"
+                className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 px-6 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 cursor-pointer"
               >
                 Explore Chronix Flow ↗
               </a>
@@ -1212,35 +1221,35 @@ export default function Dashboard({
         </div>
 
         {/* Social Connect Row */}
-        <div className="glass-card bg-[#0a0a0d]/60 border border-white/[0.05] rounded-[1.5rem] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
-              <span>🌐</span>
+        <div className="glass-card bg-[#09090c]/80 border border-white/[0.05] rounded-[2rem] p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-8 shadow-2xl max-w-7xl mx-auto w-full">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shadow-md">
+              <span className="text-lg">🌐</span>
             </div>
-            <div>
-              <h4 className="text-xs font-black uppercase text-white tracking-widest">Connect</h4>
-              <p className="text-[9px] text-[var(--muted)] font-mono uppercase tracking-wider mt-0.5">Instant channels of execution and builds</p>
+            <div className="space-y-1">
+              <h4 className="text-sm font-black uppercase text-white tracking-widest">Connect</h4>
+              <p className="text-[10px] text-[var(--muted)] font-mono uppercase tracking-widest leading-relaxed">Instant channels of execution and builds</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             {[
               {
                 name: "GitHub",
                 link: "https://github.com/Kathir-star",
-                icon: <Github size={14} />,
+                icon: <Github size={16} />,
                 color: "hover:bg-neutral-800 hover:border-neutral-700 hover:text-white"
               },
               {
                 name: "LinkedIn",
                 link: "https://www.linkedin.com/in/kathiravan-v-160555395",
-                icon: <Linkedin size={14} />,
+                icon: <Linkedin size={16} />,
                 color: "hover:bg-[#0077b5]/10 hover:border-[#0077b5]/30 hover:text-[#0077b5]"
               },
               {
                 name: "Instagram",
                 link: "https://www.instagram.com/_kathir_offlx/",
-                icon: <Instagram size={14} />,
+                icon: <Instagram size={16} />,
                 color: "hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400"
               }
             ].map((social) => (
@@ -1249,14 +1258,14 @@ export default function Dashboard({
                 href={social.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                whileTap={{ scale: 0.92, y: -2 }}
-                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.94 }}
+                whileHover={{ scale: 1.03 }}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.06] bg-black/45 text-neutral-400 text-xs font-bold font-mono uppercase tracking-widest transition-all duration-300 min-h-[40px] cursor-pointer",
+                  "flex items-center gap-3 px-5 py-3 rounded-xl border border-white/[0.06] bg-black/45 text-neutral-300 text-xs font-black font-mono uppercase tracking-widest transition-all duration-300 min-h-[44px] cursor-pointer shadow-sm",
                   social.color
                 )}
               >
-                {social.icon}
+                <span className="opacity-80 group-hover:opacity-100">{social.icon}</span>
                 <span>{social.name}</span>
               </motion.a>
             ))}
@@ -1264,8 +1273,8 @@ export default function Dashboard({
         </div>
 
         {/* Subtle Footer Line */}
-        <div className="text-center pt-4 pb-2">
-          <p className="text-[10px] sm:text-xs text-[var(--muted)] font-black uppercase tracking-widest">
+        <div className="text-center pt-8 pb-4">
+          <p className="text-[11px] sm:text-xs text-[var(--muted)] font-black uppercase tracking-widest leading-loose">
             LevelUp isn’t just fitness — it’s a system for life. 🔥
           </p>
         </div>

@@ -1058,102 +1058,106 @@ export default function App() {
       </AnimatePresence>
 
       {/* Greeting Banner */}
-      <div className="bg-gradient-to-r from-black via-[var(--card2)] to-black border-b border-[var(--border)] py-2 px-6 flex items-center gap-3 text-sm">
-        <div className="w-2 h-2 rounded-full bg-[var(--green)] shadow-[0_0_10px_var(--green)] animate-pulse" />
-        <div className="font-bold flex-1 text-xs sm:text-sm tracking-tight">{greeting}</div>
-        <div className="text-[var(--muted)] italic text-[10px] uppercase font-black tracking-widest hidden lg:block overflow-hidden whitespace-nowrap text-ellipsis max-w-sm">{quote}</div>
+      <div className="bg-gradient-to-r from-black via-[var(--card2)] to-black border-b border-[var(--border)]">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-2.5 flex items-center gap-3 text-sm flex-wrap">
+          <div className="w-2 h-2 rounded-full bg-[var(--green)] shadow-[0_0_10px_var(--green)] animate-pulse shrink-0" />
+          <div className="font-bold flex-1 text-xs sm:text-sm tracking-tight">{greeting}</div>
+          <div className="text-[var(--muted)] italic text-[10px] uppercase font-black tracking-widest hidden lg:block overflow-hidden whitespace-nowrap text-ellipsis max-w-sm">{quote}</div>
+        </div>
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between py-4 px-6 border-b border-[var(--border)] bg-[var(--bg)] sticky top-0 z-[100] backdrop-blur-md bg-opacity-80">
-        <div className="flex items-center gap-2">
-          {deferredPrompt && (
-            <button 
-              onClick={handleInstallClick}
-              className="hidden sm:flex items-center gap-2 bg-[var(--accent)]/10 text-[var(--accent)] px-3 py-1.5 rounded-lg border border-[var(--accent)]/20 text-[10px] font-black uppercase tracking-widest animate-pulse hover:bg-[var(--accent)] hover:text-white transition-all"
-            >
-              Install App
-            </button>
-          )}
-          <Logo onClick={() => setActiveTab('dashboard')} />
-          <div className="flex items-center font-display text-2xl sm:text-3xl font-black italic tracking-wider uppercase ml-1.5 select-none leading-none">
-            <span className="text-white">Level</span>
-            <span className="text-[var(--red)]">Up</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap justify-end">
-          <div className="flex items-center gap-2 bg-[var(--card)] px-4 py-2 rounded-xl border border-[var(--border)] shadow-sm group relative">
-            <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
-              <span className="text-[10px] font-black">{Math.floor(xp / 100) + 1}</span>
+      <header className="sticky top-0 z-[100] backdrop-blur-md bg-[var(--bg)] bg-opacity-80 border-b border-[var(--border)]">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className="hidden sm:flex items-center gap-2 bg-[var(--accent)]/10 text-[var(--accent)] px-3 py-1.5 rounded-lg border border-[var(--accent)]/20 text-[10px] font-black uppercase tracking-widest animate-pulse hover:bg-[var(--accent)] hover:text-white transition-all"
+              >
+                Install App
+              </button>
+            )}
+            <Logo onClick={() => setActiveTab('dashboard')} />
+            <div className="flex items-center font-display text-2xl sm:text-3xl font-black italic tracking-wider uppercase ml-1.5 select-none leading-none">
+              <span className="text-white">Level</span>
+              <span className="text-[var(--red)]">Up</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] leading-none mb-0.5 mt-0.5">Lvl {Math.floor(xp / 100) + 1}</span>
-              <div className="w-16 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
-                <div className="h-full bg-[var(--accent)]" style={{ width: `${xp % 100}%` }} />
+          </div>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <div className="flex items-center gap-2 bg-[var(--card)] px-4 py-2 rounded-xl border border-[var(--border)] shadow-sm group relative">
+              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
+                <span className="text-[10px] font-black">{Math.floor(xp / 100) + 1}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] leading-none mb-0.5 mt-0.5">Lvl {Math.floor(xp / 100) + 1}</span>
+                <div className="w-16 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
+                  <div className="h-full bg-[var(--accent)]" style={{ width: `${xp % 100}%` }} />
+                </div>
               </div>
             </div>
-          </div>
-          {streak > 0 && (
-            <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg animate-in zoom-in duration-500 hidden sm:flex", (workoutData[today] && workoutData[today].length > 0) ? "bg-[var(--red)]/10 border-[var(--red)]/20" : "bg-[var(--yellow)]/10 border-[var(--yellow)]/30")}>
-                <Flame size={16} className={cn((workoutData[today] && workoutData[today].length > 0) ? "text-[var(--red)]" : "text-[var(--yellow)]", streak >= 4 ? "animate-pulse" : "", streak >= 8 ? "animate-bounce" : "")} />
-                <div className="flex flex-col">
-                  <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none", (workoutData[today] && workoutData[today].length > 0) ? "text-white" : "text-[var(--yellow)]")}>{streak} Day Streak</span>
-                  {(!workoutData[today] || workoutData[today].length === 0) && (
-                     <span className="text-[8px] font-bold text-[var(--yellow)] uppercase tracking-wider mt-0.5">⚠️ At Risk!</span>
-                  )}
-                </div>
+            {streak > 0 && (
+              <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg animate-in zoom-in duration-500 hidden sm:flex", (workoutData[today] && workoutData[today].length > 0) ? "bg-[var(--red)]/10 border-[var(--red)]/20" : "bg-[var(--yellow)]/10 border-[var(--yellow)]/30")}>
+                  <Flame size={16} className={cn((workoutData[today] && workoutData[today].length > 0) ? "text-[var(--red)]" : "text-[var(--yellow)]", streak >= 4 ? "animate-pulse" : "", streak >= 8 ? "animate-bounce" : "")} />
+                  <div className="flex flex-col">
+                    <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none", (workoutData[today] && workoutData[today].length > 0) ? "text-white" : "text-[var(--yellow)]")}>{streak} Day Streak</span>
+                    {(!workoutData[today] || workoutData[today].length === 0) && (
+                       <span className="text-[8px] font-bold text-[var(--yellow)] uppercase tracking-wider mt-0.5">⚠️ At Risk!</span>
+                    )}
+                  </div>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setShowNotificationSettings(true)}
+                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group"
+                title="Smart Reminders"
+              >
+                <Bell size={16} />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--red)] rounded-full animate-pulse" />
+              </button>
+              <button 
+                onClick={handleChangeName}
+                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
+                title="Change Name"
+              >
+                <RefreshCcw size={16} />
+              </button>
+              <button 
+                onClick={toggleVoice}
+                className={cn(
+                  "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] transition-all shadow-sm hidden sm:block",
+                  voiceOn ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)]"
+                )}
+                title="Voice Assistant"
+              >
+                {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </button>
+              <button 
+                onClick={toggleTamilMode}
+                className={cn(
+                  "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] font-black text-xs transition-all shadow-sm",
+                  tamilMode ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)] text-[var(--muted)] hover:text-[var(--accent)]"
+                )}
+                title="Toggle Tamil Mode"
+              >
+                TA
+              </button>
+              <button 
+                onClick={toggleTheme}
+                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
+                title="Toggle Theme"
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
             </div>
-          )}
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => setShowNotificationSettings(true)}
-              className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group"
-              title="Smart Reminders"
-            >
-              <Bell size={16} />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--red)] rounded-full animate-pulse" />
-            </button>
-            <button 
-              onClick={handleChangeName}
-              className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
-              title="Change Name"
-            >
-              <RefreshCcw size={16} />
-            </button>
-            <button 
-              onClick={toggleVoice}
-              className={cn(
-                "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] transition-all shadow-sm hidden sm:block",
-                voiceOn ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)]"
-              )}
-              title="Voice Assistant"
-            >
-              {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </button>
-            <button 
-              onClick={toggleTamilMode}
-              className={cn(
-                "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] font-black text-xs transition-all shadow-sm",
-                tamilMode ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)] text-[var(--muted)] hover:text-[var(--accent)]"
-              )}
-              title="Toggle Tamil Mode"
-            >
-              TA
-            </button>
-            <button 
-              onClick={toggleTheme}
-              className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main 
-        className="flex-1 p-4 sm:p-6 pb-28 sm:pb-32 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 pb-[calc(110px+env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-2 duration-300"
         data-gender={
           activeTab === 'sessions' && sessionsSubTab === 'female' 
             ? 'female' 
