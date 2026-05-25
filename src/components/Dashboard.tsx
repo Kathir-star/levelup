@@ -460,20 +460,22 @@ export default function Dashboard({
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-4 md:space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* ⚡ Tactical Command Core & Smart Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
         
         {/* Quick Action Button Card */}
-        <div className="glass-card p-6 bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden group">
+        <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-md shadow-red-950/5">
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all" />
-          <div>
-            <div className="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center mb-3">
-              <Play size={18} fill="currentColor" />
+          <div className="flex flex-col gap-2.5">
+            <div className="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center shrink-0">
+              <Play size={16} fill="currentColor" />
             </div>
-            <h4 className="text-xs font-black text-[var(--muted)] uppercase tracking-widest">{recommendedSplit.desc}</h4>
-            <div className="text-xl font-display font-black tracking-tight text-white/95 mt-1">{recommendedSplit.label}</div>
+            <div>
+              <h4 className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest leading-none">{recommendedSplit.desc}</h4>
+              <div className="text-lg font-display font-black tracking-tight text-white/95 mt-0.5 leading-tight">{recommendedSplit.label}</div>
+            </div>
           </div>
           <button 
             onClick={() => {
@@ -481,63 +483,65 @@ export default function Dashboard({
                 setActiveTab('sessions');
               }
             }}
-            className="w-full mt-5 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/15"
+            className="w-full mt-3 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-red-500/15"
           >
             ▶ Start Today's Split
           </button>
         </div>
 
         {/* Reset Mind Button Card */}
-        <div className="glass-card p-6 bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden group">
+        <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-md shadow-blue-950/5">
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all" />
-          <div>
-            <div className="w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center mb-3">
-              <Wind size={18} />
+          <div className="flex flex-col gap-2.5">
+            <div className="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center shrink-0">
+              <Wind size={16} />
             </div>
-            <h4 className="text-xs font-black text-[var(--muted)] uppercase tracking-widest">Somatic Cortisol Reducer</h4>
-            <div className="text-xl font-display font-black tracking-tight text-white/95 mt-1">Calm & Focus baseline</div>
+            <div>
+              <h4 className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest leading-none">Somatic Cortisol Reducer</h4>
+              <div className="text-lg font-display font-black tracking-tight text-white/95 mt-0.5 leading-tight">Calm & Focus baseline</div>
+            </div>
           </div>
           <button 
             onClick={() => setShowResetMind(true)}
-            className="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-blue-500/15"
+            className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-blue-500/15"
           >
             🧘 Reset Mind (Box Breathing)
           </button>
         </div>
 
         {/* Smart Insights Bento Column */}
-        <div className="glass-card p-6 bg-gradient-to-br from-amber-500/5 to-transparent border border-white/5 rounded-[2.2rem] flex flex-col justify-between relative overflow-hidden">
-          <div>
-            <div className="flex items-center gap-1.5 mb-3">
-              <Sparkles size={14} className="text-amber-400 animate-pulse" />
-              <h4 className="text-xs font-black text-white/90 uppercase tracking-wider">Coach Smart Insights</h4>
+        <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-amber-500/5 to-transparent border border-white/5 rounded-2xl flex flex-col justify-between relative overflow-hidden shadow-md">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-1.5 leading-none">
+              <Sparkles size={13} className="text-amber-400 animate-pulse" />
+              <h4 className="text-[10px] font-black text-white/90 uppercase tracking-widest">Coach Smart Insights</h4>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 mt-0.5">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[var(--muted)] font-black uppercase">Weekly Growth</span>
+                <span className="text-[var(--muted)] font-black uppercase text-[10px]">Weekly Growth</span>
                 <span className={cn(
-                  "font-[950]",
+                  "font-[950] text-[11px]",
                   smartInsights.progressPct >= 0 ? "text-emerald-400" : "text-red-400"
                 )}>
                   {smartInsights.progressPct >= 0 ? "+" : ""}{smartInsights.progressPct}% this week
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[var(--muted)] font-black uppercase">Workouts Tracker</span>
-                <span className="text-white font-[950]">
-                  {smartInsights.missedWorkouts === 0 ? "✓ Optimization complete" : `${smartInsights.missedWorkouts} sessions missed`}
+                <span className="text-[var(--muted)] font-black uppercase text-[10px]">Workouts Tracker</span>
+                <span className="text-white font-[950] text-[11px]">
+                  {smartInsights.missedWorkouts === 0 ? "✓ Optimization" : `${smartInsights.missedWorkouts} missed`}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-[var(--muted)] font-black uppercase">Coach Rating</span>
-                <span className="text-yellow-400 font-[950]">{smartInsights.consistencyAdvice}</span>
+                <span className="text-[var(--muted)] font-black uppercase text-[10px]">Coach Rating</span>
+                <span className="text-yellow-400 font-[950] text-[10px] truncate max-w-[140px]">{smartInsights.consistencyAdvice}</span>
               </div>
             </div>
           </div>
           
-          <div className="text-[9px] uppercase font-bold text-[var(--muted)] tracking-wider mt-5">
-            {smartInsights.isOvertraining ? "⚠️ CNS ALERT: 5+ workout days. Rest is required!" : "✓ CNS baseline within adaptive buffer."}
+          <div className="text-[8px] uppercase font-bold text-[var(--muted)] tracking-wider mt-3 pt-2.5 border-t border-white/[0.03]">
+            {smartInsights.isOvertraining ? "⚠️ CNS ALERT: 5+ workout days. Rest required!" : "✓ CNS baseline within adaptive buffer."}
           </div>
         </div>
 
@@ -550,10 +554,10 @@ export default function Dashboard({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="p-4 bg-emerald-500/15 border border-emerald-500/35 rounded-2xl text-emerald-300 text-xs font-black uppercase tracking-wider flex items-center justify-between gap-4 shadow-lg shadow-emerald-500/5"
+            className="p-3 bg-emerald-500/15 border border-emerald-500/35 rounded-2xl text-emerald-300 text-xs font-black uppercase tracking-wider flex items-center justify-between gap-4 shadow-lg shadow-emerald-500/5"
           >
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={15} />
               <span>{innerNotification}</span>
             </div>
             <button onClick={() => setInnerNotification(null)} className="text-emerald-300 hover:text-white pb-0.5">×</button>
@@ -562,86 +566,86 @@ export default function Dashboard({
       </AnimatePresence>
 
       {/* XP Progress Bar */}
-      <div className="glass-card p-6 bg-gradient-to-r from-[var(--card)] to-[var(--bg)] border-l-4 border-l-[var(--accent)]">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--red)] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-[var(--accent)]/20 tracking-tighter">
+      <div className="glass-card p-4 sm:p-5 bg-gradient-to-r from-[var(--card)] to-[var(--bg)] border-l-4 border-l-[var(--accent)] rounded-2xl shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--red)] flex items-center justify-center text-white text-base font-black shadow-md shadow-[var(--accent)]/15 tracking-tighter">
               Lvl {level}
             </div>
             <div>
-              <h2 className="text-xl font-black uppercase tracking-tight text-white">Elite Performance</h2>
-              <p className="text-xs text-[var(--muted)] font-black uppercase tracking-widest">{xp} Total XP Earned</p>
+              <h2 className="text-base font-black uppercase tracking-tight text-white leading-tight">Elite Performance</h2>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider leading-none mt-0.5">{xp} Total XP Earned</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-black italic text-[var(--accent)]">{100 - xpInLevel} XP</div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">To Level {level + 1}</p>
+            <div className="text-lg font-black italic text-[var(--accent)] leading-none">{100 - xpInLevel} XP</div>
+            <p className="text-[8px] font-black uppercase tracking-widest text-[var(--muted)] mt-0.5">To Level {level + 1}</p>
           </div>
         </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
           <div 
-            className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--red)] transition-all duration-1000 shadow-[0_0_15px_var(--accent-glow)]"
+            className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--red)] transition-all duration-1000 shadow-[0_0_10px_var(--accent-glow)]"
             style={{ width: `${progressToNextLevel}%` }}
           />
         </div>
       </div>
 
       {/* ⚔️ Weekly Challenge Card System */}
-      <div className="glass-card p-6 bg-gradient-to-r from-purple-500/5 to-pink-500/10 border-2 border-purple-500/20 rounded-[2rem] relative overflow-hidden group">
+      <div className="glass-card p-4 sm:p-5 bg-gradient-to-r from-purple-500/5 to-pink-500/10 border border-purple-500/20 rounded-2xl relative overflow-hidden group shadow-sm">
         <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-xl">⚔️</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+              <span className="text-base">⚔️</span>
             </div>
             <div>
-              <h4 className="text-base font-black uppercase text-white tracking-tight flex items-center gap-1.5">
-                Weekly Combat Training <span className="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-black tracking-widest">ACTIVE</span>
+              <h4 className="text-sm font-black uppercase text-white tracking-tight flex items-center gap-1.5 leading-none">
+                Weekly Combat Training <span className="text-[8px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-black tracking-widest">ACTIVE</span>
               </h4>
-              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider">Maintain muscle synthesis with 4 active logs a week</p>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider leading-none mt-1">Maintain muscle synthesis with 4 active logs a week</p>
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-xs font-black uppercase text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-xl border border-purple-500/20">
+          <div className="text-left sm:text-right">
+            <span className="text-[10px] font-black uppercase text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-xl border border-purple-500/20">
               REWARD: +150 XP
             </span>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs font-[800] uppercase tracking-wider">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-[11px] font-[800] uppercase tracking-wider leading-none">
             <span className="text-white/90">Challenge Status: {workoutsLast7Days} / {targetWorkouts} workouts logged</span>
             <span className="text-purple-400 font-black">{progressPct}% Complete</span>
           </div>
 
-          <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
             <div 
               className="h-full bg-gradient-to-r from-purple-500 via-pink-400 to-amber-400 rounded-full transition-all duration-1000"
               style={{ width: `${progressPct}%` }}
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between pt-0.5">
             <div className="text-[9px] text-[var(--muted)] font-bold uppercase tracking-widest flex items-center gap-1">
-              🔒 Core cycle resets weekly based on last log verification.
+              🔒 Resets weekly based on last log verification.
             </div>
             {isCompleted ? (
               isClaimed ? (
-                <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black uppercase tracking-widest px-4 py-2 rounded-xl flex items-center gap-1.5">
-                  ✓ Reward Claimed
+                <span className="text-[9px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black uppercase tracking-widest px-3 py-1.5 rounded-xl flex items-center gap-1">
+                  ✓ Claimed
                 </span>
               ) : (
                 <button
                   onClick={handleClaimWeeklyBonus}
-                  className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-display font-black text-[10px] uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-display font-black text-[9px] uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
                 >
-                  Claim +150 XP Reward
+                  Claim +150 XP
                 </button>
               )
             ) : (
-              <span className="text-[9px] text-[var(--muted)] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg tracking-widest">
+              <span className="text-[9px] text-[var(--muted)] font-black uppercase bg-white/5 px-2.5 py-1 rounded-lg tracking-widest">
                 Lockout Active
               </span>
             )}
@@ -650,36 +654,36 @@ export default function Dashboard({
       </div>
 
       {/* 📊 Weekly Performance Social Export Section */}
-      <div className="glass-card p-6 bg-gradient-to-br from-[var(--card)] to-black border-2 border-white/5 rounded-[2rem] relative overflow-hidden group">
+      <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-[var(--card)] to-black border border-white/5 rounded-2xl relative overflow-hidden group shadow-sm">
         <div className="absolute top-0 right-0 w-36 h-36 bg-[var(--accent)]/5 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded-xl flex items-center justify-center shadow-lg">
-              <Share2 size={20} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+              <Share2 size={16} />
             </div>
             <div>
-              <h4 className="text-base font-black uppercase text-white tracking-tight flex items-center gap-2">
-                Weekly Performance Export <span className="text-[9px] bg-[var(--accent)]/20 text-[var(--accent)] px-2 py-0.5 rounded font-black tracking-widest">NEW</span>
+              <h4 className="text-sm font-black uppercase text-white tracking-tight flex items-center gap-1.5 leading-none">
+                Weekly Performance Export <span className="text-[8px] bg-[var(--accent)]/20 text-[var(--accent)] px-1.5 py-0.5 rounded font-black tracking-widest">NEW</span>
               </h4>
-              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider">Aggregate and share your last 7 days of raw performance</p>
+              <p className="text-[10px] text-[var(--muted)] font-black uppercase tracking-wider leading-none mt-1">Aggregate and share your last 7 days of raw performance</p>
             </div>
           </div>
           
           {/* Preset Buttons for custom styles */}
-          <div className="flex gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5 md:self-center">
+          <div className="flex gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5 sm:self-center">
             {(['beast', 'standard', 'aesthetic'] as const).map((preset) => (
               <button
                 key={preset}
                 onClick={() => setExportPreset(preset)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                  "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
                   exportPreset === preset
-                    ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)] scale-[1.02]"
+                    ? "bg-[var(--accent)] text-white shadow shadow-[var(--accent-glow)] scale-[1.02]"
                     : "text-[var(--muted)] hover:text-white"
                 )}
               >
-                {preset === 'beast' && '🔥 Beast Mode'}
+                {preset === 'beast' && '🔥 Beast'}
                 {preset === 'standard' && '⚡ Standard'}
                 {preset === 'aesthetic' && '🌱 Aesthetic'}
               </button>
@@ -688,20 +692,20 @@ export default function Dashboard({
         </div>
 
         {/* Dynamic customized text generator layout */}
-        <div className="space-y-4">
-          <div className="bg-black/40 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all">
+        <div className="space-y-3">
+          <div className="bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-3 transition-all">
             <textarea
               value={weeklyStatsText}
               readOnly
-              className="w-full text-xs text-white/90 bg-transparent border-0 outline-none resize-none font-mono min-h-[150px] leading-relaxed select-all"
+              className="w-full text-[11px] text-white/90 bg-transparent border-0 outline-none resize-none font-mono min-h-[110px] leading-relaxed select-all"
               placeholder="Collecting performance metrics..."
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-            <div className="text-[10px] text-[var(--muted)] font-semibold uppercase tracking-widest flex items-center gap-1.5">
-              <Sparkles size={12} className="text-[var(--yellow)] animate-pulse" /> 
-              Click below to copy your summary text for Instagram, Twitter or WhatsApp!
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-0.5">
+            <div className="text-[9px] text-[var(--muted)] font-semibold uppercase tracking-widest flex items-center gap-1 leading-none text-center sm:text-left">
+              <Sparkles size={11} className="text-[var(--yellow)] animate-pulse" /> 
+              Click copy to share to Instagram, Twitter or WhatsApp!
             </div>
 
             <button
@@ -711,7 +715,6 @@ export default function Dashboard({
                   setIsCopied(true);
                   setTimeout(() => setIsCopied(false), 2500);
                 } catch (err) {
-                  // Fallback in case of copy constraints inside direct iframes
                   const textArea = document.createElement("textarea");
                   textArea.value = weeklyStatsText;
                   document.body.appendChild(textArea);
@@ -725,7 +728,7 @@ export default function Dashboard({
                 }
               }}
               className={cn(
-                "w-full sm:w-auto py-3 px-6 rounded-xl transition-all font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg cursor-pointer min-w-[170px]",
+                "w-full sm:w-auto py-2.5 px-4 rounded-xl transition-all font-display font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md cursor-pointer min-w-[150px]",
                 isCopied 
                   ? "bg-emerald-500 text-white shadow-emerald-500/10" 
                   : "bg-white text-black hover:bg-neutral-200"
@@ -733,11 +736,11 @@ export default function Dashboard({
             >
               {isCopied ? (
                 <>
-                  <Check size={14} /> Copied!
+                  <Check size={13} /> Copied!
                 </>
               ) : (
                 <>
-                  <Copy size={14} /> Copy Summary
+                  <Copy size={13} /> Copy Summary
                 </>
               )}
             </button>
@@ -746,23 +749,23 @@ export default function Dashboard({
       </div>
 
       {/* Smart Health & Safety Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* BMI & Body Index */}
-        <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+        <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl relative overflow-hidden group shadow-sm">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all pointer-events-none" />
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3 leading-none">
              <h3 className="tab-heading flex items-center gap-2">
-                <Activity size={16} className="text-[var(--accent)]" />
+                <Activity size={15} className="text-[var(--accent)]" />
                 BMI & Body Index
              </h3>
-             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Calculated Summary</span>
+             <span className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Calculated Summary</span>
           </div>
-          <div className="flex items-baseline gap-4 mt-2">
-            <span className="text-5xl font-black tracking-tighter text-white">
+          <div className="flex items-baseline gap-3 mt-1.5">
+            <span className="text-4xl font-black tracking-tighter text-white">
               {profile.height && profile.weight ? (profile.weight / ((profile.height / 100) ** 2)).toFixed(1) : "—"}
             </span>
             <span className={cn(
-              "text-[10px] font-black uppercase px-3 py-1 rounded-full",
+              "text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full",
               !(profile.height && profile.weight) ? "bg-white/5 text-white/50" : 
               (profile.weight / ((profile.height / 100) ** 2)) < 18.5 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" :
               (profile.weight / ((profile.height / 100) ** 2)) < 25 ? "bg-green-500/10 text-green-400 border border-green-500/20" :
@@ -774,41 +777,41 @@ export default function Dashboard({
                (profile.weight / ((profile.height / 100) ** 2)) < 30 ? "Overweight" : "Obese"}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--muted)]">
+          <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[var(--border)] text-[11px] text-[var(--muted)]">
             <div>Weight: <strong className="text-white">{profile.weight || "—"} kg</strong></div>
             <div>Height: <strong className="text-white">{profile.height || "—"} cm</strong></div>
           </div>
         </div>
 
         {/* Dynamic Recovery & Safety Rules */}
-        <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+        <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl relative overflow-hidden group shadow-sm">
           <div className="absolute top-0 right-5 w-32 h-32 bg-[var(--yellow)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--yellow)]/10 transition-all pointer-events-none" />
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3 leading-none">
              <h3 className="tab-heading flex items-center gap-2">
-                <Target size={16} className="text-[var(--yellow)]" />
+                <Target size={15} className="text-[var(--yellow)]" />
                 Coach Recovery Rule
              </h3>
-             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Activity Watch</span>
+             <span className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Activity Watch</span>
           </div>
-          <div className="space-y-3 mt-2">
+          <div className="space-y-2 mt-1.5">
             {Object.keys(data).filter(k => {
               const diff = Math.abs(new Date().getTime() - new Date(k).getTime());
               return diff <= (1000 * 60 * 60 * 24 * 7);
             }).length >= 5 ? (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                <div className="text-xs text-white/90 leading-relaxed">
-                  <strong>⚠️ High Frequency Overtraining:</strong> You have trained 5+ days in the last week. Muscles synthesize during rest, not lift. Schedule a 48H pure recovery break!
+              <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <div className="text-[11px] text-white/90 leading-tight">
+                  <strong>⚠️ High Frequency Overtraining:</strong> You have trained 5+ days in the last week. Schedule a 48H pure recovery break!
                 </div>
               </div>
             ) : (
-              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
-                <div className="text-xs text-white/90 leading-relaxed">
-                  <strong>💧 Hydration & Recovery Plan:</strong> Consume 3.5 liters (12 glasses) of water on lift days to assist filtration and complete protein synthesis. Stay safe.
+              <div className="p-2.5 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <div className="text-[11px] text-white/90 leading-tight">
+                  <strong>💧 Hydration & Recovery:</strong> Consume 3.5 liters of water on lift days to assist filtration and complete protein synthesis.
                 </div>
               </div>
             )}
-            <p className="text-[10px] text-[var(--muted)] uppercase font-[800] tracking-wider leading-relaxed">
-              * Tip: Healthy joints require active warm-ups, complete ROM, and sound sleep.
+            <p className="text-[9px] text-[var(--muted)] uppercase font-[800] tracking-wider leading-none">
+              * Joint protection requires active warm-ups & ROM.
             </p>
           </div>
         </div>
@@ -818,28 +821,28 @@ export default function Dashboard({
       <DailyMotivation workoutType={currentWorkoutType as any} />
 
       {/* Daily Missions */}
-      <div className="glass-card p-6 border border-[var(--border)] relative overflow-hidden group">
+      <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl relative overflow-hidden group shadow-sm">
          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all pointer-events-none" />
-         <div className="flex items-center justify-between mb-6">
+         <div className="flex items-center justify-between mb-4 leading-none">
             <h3 className="tab-heading flex items-center gap-2">
-               <Target size={16} className="text-[var(--accent)]" />
+               <Target size={15} className="text-[var(--accent)]" />
                Daily Missions
             </h3>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Gain XP</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Gain XP</span>
          </div>
-         <div className="flex flex-col gap-3">
+         <div className="flex flex-col gap-2">
             {missions.map(mission => (
-               <div key={mission.id} className={cn("flex justify-between items-center p-4 rounded-2xl border transition-all", mission.completed ? "bg-[var(--accent)]/10 border-[var(--accent)]/30" : "bg-[var(--sub)] border-[var(--border)] hover:border-[var(--muted)]")}>
-                  <div className="flex items-center gap-3">
-                     <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", mission.completed ? "bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]" : "bg-black/20 text-[var(--muted)]")}>
-                        {mission.completed ? <CheckCircle2 size={16} /> : <div className="w-2 h-2 rounded-full bg-[var(--muted)]" />}
+               <div key={mission.id} className={cn("flex justify-between items-center p-3 rounded-2xl border transition-all", mission.completed ? "bg-[var(--accent)]/10 border-[var(--accent)]/30" : "bg-[var(--sub)] border-[var(--border)] hover:border-[var(--muted)]")}>
+                  <div className="flex items-center gap-2.5">
+                     <div className={cn("w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0", mission.completed ? "bg-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]" : "bg-black/20 text-[var(--muted)]")}>
+                        {mission.completed ? <CheckCircle2 size={14} /> : <div className="w-1.5 h-1.5 rounded-full bg-[var(--muted)]" />}
                      </div>
-                     <span className={cn("text-sm font-bold", mission.completed ? "text-white line-through opacity-70" : "text-white")}>{mission.text}</span>
+                     <span className={cn("text-xs font-bold leading-tight", mission.completed ? "text-white line-through opacity-70" : "text-white")}>{mission.text}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                     <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">+{mission.xpReward} XP</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">+{mission.xpReward} XP</span>
                      {!mission.completed && (
-                        <button onClick={() => completeMission(mission.id, mission.text, mission.xpReward)} className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Claim</button>
+                        <button onClick={() => completeMission(mission.id, mission.text, mission.xpReward)} className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all">Claim</button>
                      )}
                   </div>
                </div>
@@ -848,148 +851,148 @@ export default function Dashboard({
       </div>
 
       {/* Self-Discipline & Dopamine Scorecard */}
-      <div className="glass-card p-6 bg-gradient-to-br from-[var(--card)] to-[#070707] border border-[var(--border)] rounded-[2rem] relative overflow-hidden group">
+      <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-[var(--card)] to-[#070707] border border-[var(--border)] rounded-2xl relative overflow-hidden group shadow-sm">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">🛡️</span>
             <div>
-              <h3 className="text-xs font-black uppercase text-white tracking-widest">Self-Mastery Core Status</h3>
-              <p className="text-[9px] text-[var(--muted)] font-black uppercase tracking-wider">Subtle neurological alignment indicators</p>
+              <h3 className="text-sm font-black uppercase text-white tracking-widest leading-none">Self-Mastery Core Status</h3>
+              <p className="text-[9px] text-[var(--muted)] font-black uppercase tracking-wider leading-none mt-1">Subtle neurological alignment indicators</p>
             </div>
           </div>
           <div className="flex gap-4">
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400">
               🔥 Streak: <span className="font-black">{localStorage.getItem('sm_detox_streak') || '0'} Days</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
               ⚡ Focus: <span className="font-black">{localStorage.getItem(`sm_dopamine_index_${today}`) || '75'}%</span>
             </div>
           </div>
         </div>
 
         {/* Subtle rotate quotes inside Dashboard */}
-        <div className="p-3.5 bg-white/5 border border-white/5 rounded-xl text-center">
-          <p className="text-[11px] text-white/90 italic leading-relaxed">
+        <div className="p-2.5 bg-white/5 border border-white/5 rounded-xl text-center">
+          <p className="text-[10px] text-white/90 italic leading-normal">
             " {RESPECT_MESSAGES[Math.floor(Date.now() / 86400000) % RESPECT_MESSAGES.length]} "
           </p>
         </div>
       </div>
 
       {/* Wellness Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <MoodTracker />
         <BreathingExercise />
       </div>
 
       {/* Tracker Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <WaterTracker />
         <SleepTracker />
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <div className="glass-card p-6 flex flex-col justify-between group overflow-hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--blue)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--blue)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-4">
-               <div className="w-10 h-10 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)]">
-                  <Footprints size={20} />
+            <div className="flex items-center justify-between mb-3 leading-none">
+               <div className="w-8 h-8 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)] border border-[var(--blue)]/10 shrink-0">
+                  <Footprints size={16} />
                </div>
-               <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Steps</span>
+               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Steps</span>
             </div>
             <div>
-               <div className="text-4xl font-black tracking-tighter">{(steps[today] || 0).toLocaleString()}</div>
-               <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 h-1.5 bg-[var(--sub)] rounded-full overflow-hidden">
+               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{(steps[today] || 0).toLocaleString()}</div>
+               <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-white/[0.03]">
+                  <div className="flex-1 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
                      <div className="h-full bg-[var(--blue)]" style={{ width: `${Math.min(100, ((steps[today] || 0) / 10000) * 100)}%` }} />
                   </div>
-                  <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Goal: 10K</span>
+                  <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-tight shrink-0">Goal: 10K</span>
                </div>
             </div>
          </div>
 
-         <div className="glass-card p-6 flex flex-col justify-between group overflow-hidden">
+         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--red)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--red)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-4">
-               <div className="w-10 h-10 bg-[var(--red)]/10 rounded-xl flex items-center justify-center text-[var(--red)]">
-                  <Zap size={20} />
+            <div className="flex items-center justify-between mb-3 leading-none">
+               <div className="w-8 h-8 bg-[var(--red)]/10 rounded-xl flex items-center justify-center text-[var(--red)] border border-[var(--red)]/10 shrink-0">
+                  <Zap size={16} />
                </div>
-               <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Active Burn</span>
+               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Burn</span>
             </div>
             <div>
-               <div className="text-4xl font-black tracking-tighter">{calories}</div>
-               <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mt-1">Kcal Est. Today</p>
+               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{calories}</div>
+               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Kcal Today</p>
             </div>
          </div>
 
-         <div className="glass-card p-6 flex flex-col justify-between group overflow-hidden">
+         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--green)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--green)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-4">
-               <div className="w-10 h-10 bg-[var(--green)]/10 rounded-xl flex items-center justify-center text-[var(--green)]">
-                  <Activity size={20} />
+            <div className="flex items-center justify-between mb-3 leading-none">
+               <div className="w-8 h-8 bg-[var(--green)]/10 rounded-xl flex items-center justify-center text-[var(--green)] border border-[var(--green)]/10 shrink-0">
+                  <Activity size={16} />
                </div>
-               <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Workout Time</span>
+               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Time</span>
             </div>
             <div>
-               <div className="text-4xl font-black tracking-tighter">{workoutTime}m</div>
-               <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mt-1">Active Duration</p>
+               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{workoutTime}m</div>
+               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Active time</p>
             </div>
          </div>
 
-         <div className="glass-card p-6 flex flex-col justify-between group overflow-hidden">
+         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--blue)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--blue)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-4">
-               <div className="w-10 h-10 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)]">
-                  <Droplets size={20} />
+            <div className="flex items-center justify-between mb-3 leading-none">
+               <div className="w-8 h-8 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)] border border-[var(--blue)]/10 shrink-0">
+                  <Droplets size={16} />
                </div>
-               <span className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Hydration</span>
+               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Water</span>
             </div>
             <div>
-               <div className="text-4xl font-black tracking-tighter">{water}/{waterGoal}</div>
-               <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mt-1">Glasses Logged</p>
+               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{water}/{waterGoal}</div>
+               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Logged Glass</p>
             </div>
          </div>
       </div>
 
       {/* Live Data Chain Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between leading-none">
            <h3 className="tab-heading text-white">🔗 Live Data Chain</h3>
-           <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] animate-pulse shadow-[0_0_10px_var(--accent-glow)]">🔥 82% Users Trained Today</span>
+           <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)] animate-pulse shadow-[0_0_8px_var(--accent-glow)] bg-[var(--accent)]/10 px-2 py-1 rounded border border-[var(--accent)]/15">🔥 82% Users Trained Today</span>
         </div>
         {loggedDays.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {loggedDays.map((d, i) => {
               const entries = data[d];
               const muscles = Array.from(new Set(entries.map(e => e.muscle)));
               return (
-                <div key={d} className="flex-shrink-0 flex items-center gap-4">
-                  <div className="bg-[var(--card)] border border-[var(--accent)] rounded-2xl p-4 min-w-[140px] shadow-lg">
-                    <div className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest">{d.split('-').slice(1).join('/')}</div>
-                    <div className="text-sm font-bold text-white mt-1">LINK {loggedDays.length - i}</div>
+                <div key={d} className="flex-shrink-0 flex items-center gap-3">
+                  <div className="bg-[var(--card)] border border-[var(--accent)] rounded-xl p-3 min-w-[125px] shadow">
+                    <div className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest leading-none">{d.split('-').slice(1).join('/')}</div>
+                    <div className="text-xs font-bold text-white mt-1 leading-none">LINK {loggedDays.length - i}</div>
                     <div className="text-[10px] text-[var(--muted)] uppercase font-black tracking-tighter mt-2">{muscles.join(', ')}</div>
                   </div>
-                  {i < loggedDays.length - 1 && <span className="text-[var(--accent)] text-xl opacity-30">→</span>}
+                  {i < loggedDays.length - 1 && <span className="text-[var(--accent)] text-lg opacity-30 select-none">→</span >}
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="text-center p-6 border border-dashed border-[var(--border)] rounded-2xl text-[var(--muted)] text-xs font-bold uppercase tracking-widest">No links in chain yet. Start training!</div>
+          <div className="text-center p-4 border border-dashed border-[var(--border)] rounded-xl text-[var(--muted)] text-[10px] font-bold uppercase tracking-widest">No links in chain yet. Start training!</div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="glass-card p-8">
-          <div className="flex items-center justify-between mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="glass-card p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4 leading-none">
              <h3 className="tab-heading flex items-center gap-2">
-               <Activity size={16} className="text-[var(--accent)]" />
-               Calorie Trends
+                <Activity size={15} className="text-[var(--accent)]" />
+                Calorie Trends
              </h3>
-             <div className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Last 7 Days</div>
+             <div className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Last 7 Days</div>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -1036,54 +1039,54 @@ export default function Dashboard({
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="tab-heading text-xl">📆 Training Consistency</h2>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between leading-none">
+          <h2 className="tab-heading text-lg">📆 Training Consistency</h2>
           <div className="flex gap-2">
-            <button onClick={() => setCalOffset(prev => prev - 1)} className="p-3 rounded-2xl bg-[var(--sub)] border border-[var(--border)] hover:border-[var(--accent)] transition-all">
-              <ChevronLeft size={20} />
+            <button onClick={() => setCalOffset(prev => prev - 1)} className="p-2 rounded-xl bg-[var(--sub)] border border-[var(--border)] hover:border-[var(--accent)] transition-all cursor-pointer">
+              <ChevronLeft size={16} />
             </button>
-            <button onClick={() => setCalOffset(prev => prev + 1)} className="p-3 rounded-2xl bg-[var(--sub)] border border-[var(--border)] hover:border-[var(--accent)] transition-all">
-              <ChevronRight size={20} />
+            <button onClick={() => setCalOffset(prev => prev + 1)} className="p-2 rounded-xl bg-[var(--sub)] border border-[var(--border)] hover:border-[var(--accent)] transition-all cursor-pointer">
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
         
-        <div className="glass-card p-8 group relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-2 h-full bg-[var(--accent)] group-hover:w-4 transition-all" />
+        <div className="glass-card p-4 sm:p-5 group relative overflow-hidden rounded-2xl shadow-sm">
+          <div className="absolute top-0 left-0 w-2 h-full bg-[var(--accent)] group-hover:w-3 transition-all" />
           
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 glass rounded-2xl flex items-center justify-center text-[var(--accent)] shadow-lg shadow-[var(--accent-glow)]">
-                 <Target size={28} />
+          <div className="flex items-center justify-between mb-4 leading-none">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 glass rounded-xl flex items-center justify-center text-[var(--accent)] shadow-md shadow-[var(--accent-glow)]">
+                 <Target size={18} />
               </div>
               <div>
-                <h4 className="text-2xl font-display font-black uppercase tracking-tight">
+                <h4 className="text-lg font-display font-black uppercase tracking-tight">
                    {MONTHS[new Date(new Date().getFullYear(), new Date().getMonth() + calOffset, 1).getMonth()]} {new Date(new Date().getFullYear(), new Date().getMonth() + calOffset, 1).getFullYear()}
                 </h4>
-                <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest italic">Syncing live from training logs</p>
+                <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest italic leading-none mt-1">Syncing live from logs</p>
               </div>
             </div>
-            <button onClick={() => setCalOffset(0)} className="tab-heading text-[var(--accent)] hover:underline">Return Today</button>
+            <button onClick={() => setCalOffset(0)} className="tab-heading text-[10px] text-[var(--accent)] hover:underline cursor-pointer">Return Today</button>
           </div>
 
-          <div className="grid grid-cols-7 gap-3 mb-4">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <span key={d} className="text-center text-[10px] text-[var(--muted)] font-black uppercase tracking-[0.3em]">{d}</span>
+              <span key={d} className="text-center text-[9px] text-[var(--muted)] font-black uppercase tracking-wider">{d}</span>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {renderCalendar()}
           </div>
           
-          <div className="flex flex-wrap gap-8 mt-10 pt-8 border-t border-[var(--border)]">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-lg bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Session Logged</span>
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-[var(--border)]">
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-md bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/70">Session Loged</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-lg border-2 border-[var(--yellow)]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Current Day</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-md border-2 border-[var(--yellow)]" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/70">Current Day</span>
             </div>
           </div>
         </div>
@@ -1095,70 +1098,70 @@ export default function Dashboard({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-20 pt-16 border-t border-white/5 space-y-16"
+        className="mt-10 pt-8 border-t border-white/5 space-y-6"
       >
         {/* Section Identity */}
-        <div className="text-center space-y-5 px-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 shadow-lg shadow-blue-500/5">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest font-mono">Discipline Protocol</span>
+        <div className="text-center space-y-3 px-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 shadow-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-widest font-mono">Discipline Protocol</span>
           </div>
           
-          <h2 className={sectionTitleCls}>
+          <h2 className="text-xl font-display font-black tracking-tight text-white uppercase italic leading-none">
             🚀 Built for Discipline
           </h2>
           
-          <div className={subTitleCls}>
+          <div className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">
             LevelUp System by <span className="text-white border-b border-white/20 pb-0.5 hover:text-blue-400 hover:border-blue-400/40 transition-colors duration-200">Kathiravan</span>
           </div>
           
-          <p className={taglineCls}>
+          <p className="text-xs text-[var(--muted)] italic">
             "Transform your body. Master your mind. Control your life."
           </p>
         </div>
 
         {/* Highlighted Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 max-w-7xl mx-auto">
           {/* Creator Profile Card */}
           <motion.div
             whileHover={{ 
-              scale: 1.02, 
-              boxShadow: "0 25px 50px -12px rgba(59, 130, 246, 0.25)",
-              borderColor: "rgba(59, 130, 246, 0.4)"
+              scale: 1.01, 
+              boxShadow: "0 20px 40px -12px rgba(59, 130, 246, 0.2)",
+              borderColor: "rgba(59, 130, 246, 0.3)"
             }}
             whileTap={{ scale: 0.99 }}
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
-            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-[2.25rem] p-8 md:p-10 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_40px_rgba(0,0,0,0.6)] min-h-[380px]"
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-2xl p-5 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-h-[300px]"
           >
             {/* Soft background glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-500" />
             
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 group-hover:bg-blue-500/20 transition-all duration-300 shadow-md">
-                  <Code size={24} />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 group-hover:bg-blue-500/20 transition-all duration-300 shadow-md">
+                  <Code size={18} />
                 </div>
-                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
+                <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
                   👨‍💻 About the Developer
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <h3 className={cardTitleCls}>
+              <div className="space-y-2">
+                <h3 className="text-lg font-display font-black uppercase tracking-tight text-white leading-tight">
                   Kathiravan
                 </h3>
-                <p className={cardBodyCls}>
+                <p className="text-xs text-[var(--muted)] leading-relaxed">
                   Developer, creator, and builder of systems focused on discipline, self-control, and performance optimization.
                 </p>
               </div>
             </div>
 
-            <div className="mt-10 pt-4">
+            <div className="mt-6 pt-2">
               <a
                 href="https://kathir-star.github.io/portfolio_kathiravan/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 cursor-pointer"
+                className="inline-flex w-full min-h-[40px] items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow shadow-blue-500/20 hover:shadow-blue-500/35 cursor-pointer"
               >
                 View Portfolio ↗
               </a>
@@ -1168,51 +1171,51 @@ export default function Dashboard({
           {/* Project Showcase Card */}
           <motion.div
             whileHover={{ 
-              scale: 1.02, 
-              boxShadow: "0 25px 50px -12px rgba(168, 85, 247, 0.25)",
-              borderColor: "rgba(168, 85, 247, 0.4)"
+              scale: 1.01, 
+              boxShadow: "0 20px 40px -12px rgba(168, 85, 247, 0.2)",
+              borderColor: "rgba(168, 85, 247, 0.3)"
             }}
             whileTap={{ scale: 0.99 }}
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
-            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-[2.25rem] p-8 md:p-10 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_40px_rgba(0,0,0,0.6)] min-h-[380px]"
+            className="group relative overflow-hidden bg-gradient-to-b from-[#0c0c10] to-[#040406] border border-white/[0.05] rounded-2xl p-5 backdrop-blur-xl flex flex-col justify-between shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-h-[300px]"
           >
             {/* Soft background glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-500" />
             
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-105 group-hover:bg-purple-500/20 transition-all duration-300 shadow-md">
-                  <Sparkles size={24} />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-105 group-hover:bg-purple-500/20 transition-all duration-300 shadow-md">
+                  <Sparkles size={18} />
                 </div>
-                <div className="text-xs font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
+                <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 font-mono leading-none">
                   ⚡ Featured System
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h3 className={cardTitleCls}>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 leading-none">
+                  <h3 className="text-lg font-display font-black uppercase tracking-tight text-white leading-none">
                     Chronix Flow
                   </h3>
-                  <span className="text-[10px] font-mono tracking-widest font-black uppercase text-[var(--accent)] bg-[var(--accent)]/10 px-2.5 py-1 rounded-md border border-[var(--accent)]/20 shadow-sm">
+                  <span className="text-[9px] font-mono tracking-widest font-black uppercase text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded-md border border-[var(--accent)]/20 shadow-sm leading-none">
                     Productivity
                   </span>
                 </div>
-                <p className="text-xs font-black uppercase tracking-widest text-purple-400 font-mono mt-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-purple-400 font-mono leading-none">
                   Smart Productivity Engine
                 </p>
-                <p className={cardBodyCls}>
+                <p className="text-xs text-[var(--muted)] leading-relaxed">
                   A powerful task management and productivity system designed to help you stay focused and execute consistently.
                 </p>
               </div>
             </div>
 
-            <div className="mt-10 pt-4">
+            <div className="mt-6 pt-2">
               <a
                 href="https://kathir-star.github.io/chronix_Flow/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 px-6 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 cursor-pointer"
+                className="inline-flex w-full min-h-[40px] items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-mono font-black text-xs uppercase tracking-widest transition-all duration-200 shadow shadow-purple-500/20 hover:shadow-purple-500/35 cursor-pointer"
               >
                 Explore Chronix Flow ↗
               </a>
@@ -1221,7 +1224,7 @@ export default function Dashboard({
         </div>
 
         {/* Social Connect Row */}
-        <div className="glass-card bg-[#09090c]/80 border border-white/[0.05] rounded-[2rem] p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-8 shadow-2xl max-w-7xl mx-auto w-full">
+        <div className="glass-card bg-[#09090c]/85 border border-white/[0.05] rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shadow-md">
               <span className="text-lg">🌐</span>

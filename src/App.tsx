@@ -1057,18 +1057,23 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Greeting Banner */}
-      <div className="bg-gradient-to-r from-black via-[var(--card2)] to-black border-b border-[var(--border)]">
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-2.5 flex items-center gap-3 text-sm flex-wrap">
-          <div className="w-2 h-2 rounded-full bg-[var(--green)] shadow-[0_0_10px_var(--green)] animate-pulse shrink-0" />
-          <div className="font-bold flex-1 text-xs sm:text-sm tracking-tight">{greeting}</div>
-          <div className="text-[var(--muted)] italic text-[10px] uppercase font-black tracking-widest hidden lg:block overflow-hidden whitespace-nowrap text-ellipsis max-w-sm">{quote}</div>
-        </div>
-      </div>
-
       {/* Header */}
-      <header className="sticky top-0 z-[100] backdrop-blur-md bg-[var(--bg)] bg-opacity-80 border-b border-[var(--border)]">
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <header className="sticky top-0 z-[100] backdrop-blur-md bg-[var(--bg)] bg-opacity-95 border-b border-[var(--border)]">
+        {/* Top Greeting Bar */}
+        <div className="bg-black/30 border-b border-white/[0.02]">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-1.5 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--green)] shadow-[0_0_8px_var(--green)] animate-pulse shrink-0" />
+              <div className="font-extrabold text-[11px] sm:text-xs text-white/90 tracking-tight leading-none">{greeting}</div>
+            </div>
+            <div className="text-[var(--muted)] italic text-[9px] uppercase font-black tracking-widest hidden lg:block overflow-hidden whitespace-nowrap text-ellipsis max-w-sm">
+              {quote}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Brand & Controls Header */}
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-2.5 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             {deferredPrompt && (
               <button 
@@ -1079,28 +1084,28 @@ export default function App() {
               </button>
             )}
             <Logo onClick={() => setActiveTab('dashboard')} />
-            <div className="flex items-center font-display text-2xl sm:text-3xl font-black italic tracking-wider uppercase ml-1.5 select-none leading-none">
+            <div className="flex items-center font-display text-xl sm:text-2xl font-black italic tracking-wider uppercase ml-1 select-none leading-none">
               <span className="text-white">Level</span>
               <span className="text-[var(--red)]">Up</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            <div className="flex items-center gap-2 bg-[var(--card)] px-4 py-2 rounded-xl border border-[var(--border)] shadow-sm group relative">
-              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
-                <span className="text-[10px] font-black">{Math.floor(xp / 100) + 1}</span>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-1.5 bg-[var(--card)] px-2.5 py-1.5 rounded-xl border border-[var(--border)] shadow-sm group relative">
+              <div className="w-5 h-5 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
+                <span className="text-[9px] font-black">{Math.floor(xp / 100) + 1}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] leading-none mb-0.5 mt-0.5">Lvl {Math.floor(xp / 100) + 1}</span>
-                <div className="w-16 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)] leading-none mb-0.5">Lvl {Math.floor(xp / 100) + 1}</span>
+                <div className="w-12 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
                   <div className="h-full bg-[var(--accent)]" style={{ width: `${xp % 100}%` }} />
                 </div>
               </div>
             </div>
             {streak > 0 && (
-              <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg animate-in zoom-in duration-500 hidden sm:flex", (workoutData[today] && workoutData[today].length > 0) ? "bg-[var(--red)]/10 border-[var(--red)]/20" : "bg-[var(--yellow)]/10 border-[var(--yellow)]/30")}>
-                  <Flame size={16} className={cn((workoutData[today] && workoutData[today].length > 0) ? "text-[var(--red)]" : "text-[var(--yellow)]", streak >= 4 ? "animate-pulse" : "", streak >= 8 ? "animate-bounce" : "")} />
+              <div className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shadow-lg animate-in zoom-in duration-500 hidden sm:flex", (workoutData[today] && workoutData[today].length > 0) ? "bg-[var(--red)]/10 border-[var(--red)]/20" : "bg-[var(--yellow)]/10 border-[var(--yellow)]/30")}>
+                  <Flame size={14} className={cn((workoutData[today] && workoutData[today].length > 0) ? "text-[var(--red)]" : "text-[var(--yellow)]", streak >= 4 ? "animate-pulse" : "", streak >= 8 ? "animate-bounce" : "")} />
                   <div className="flex flex-col">
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none", (workoutData[today] && workoutData[today].length > 0) ? "text-white" : "text-[var(--yellow)]")}>{streak} Day Streak</span>
+                    <span className={cn("text-[9px] font-black uppercase tracking-widest leading-none", (workoutData[today] && workoutData[today].length > 0) ? "text-white" : "text-[var(--yellow)]")}>{streak} Day Streak</span>
                     {(!workoutData[today] || workoutData[today].length === 0) && (
                        <span className="text-[8px] font-bold text-[var(--yellow)] uppercase tracking-wider mt-0.5">⚠️ At Risk!</span>
                     )}
@@ -1110,33 +1115,33 @@ export default function App() {
             <div className="flex items-center gap-1">
               <button 
                 onClick={() => setShowNotificationSettings(true)}
-                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group flex items-center justify-center shrink-0 cursor-pointer"
                 title="Smart Reminders"
               >
-                <Bell size={16} />
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[var(--red)] rounded-full animate-pulse" />
+                <Bell size={14} />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[var(--red)] rounded-full animate-pulse" />
               </button>
               <button 
                 onClick={handleChangeName}
-                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm flex items-center justify-center shrink-0 cursor-pointer"
                 title="Change Name"
               >
-                <RefreshCcw size={16} />
+                <RefreshCcw size={14} />
               </button>
               <button 
                 onClick={toggleVoice}
                 className={cn(
-                  "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] transition-all shadow-sm hidden sm:block",
+                  "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] transition-all shadow-sm hidden sm:flex items-center justify-center shrink-0 cursor-pointer",
                   voiceOn ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)]"
                 )}
                 title="Voice Assistant"
               >
-                {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                {voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
               </button>
               <button 
                 onClick={toggleTamilMode}
                 className={cn(
-                  "p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] font-black text-xs transition-all shadow-sm",
+                  "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] font-black text-[9px] sm:text-[10px] transition-all shadow-sm flex items-center justify-center shrink-0 cursor-pointer",
                   tamilMode ? "border-[var(--accent)] text-[var(--accent)]" : "hover:border-[var(--accent)] text-[var(--muted)] hover:text-[var(--accent)]"
                 )}
                 title="Toggle Tamil Mode"
@@ -1145,10 +1150,10 @@ export default function App() {
               </button>
               <button 
                 onClick={toggleTheme}
-                className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm flex items-center justify-center shrink-0 cursor-pointer"
                 title="Toggle Theme"
               >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
               </button>
             </div>
           </div>
@@ -1157,7 +1162,7 @@ export default function App() {
 
       {/* Main Content */}
       <main 
-        className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 pb-[calc(110px+env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 pb-[calc(80px+env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-2 duration-300"
         data-gender={
           activeTab === 'sessions' && sessionsSubTab === 'female' 
             ? 'female' 
@@ -1377,7 +1382,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Bottom Fixed Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-[190] bg-[var(--card2)]/90 backdrop-blur-md border-t border-[var(--border)] py-1.5 pb-safe px-4 select-none shadow-[0_-10px_30px_rgba(0,0,0,0.6)] flex justify-around items-center">
+      <div className="fixed bottom-0 left-0 right-0 z-[190] bg-[#0b0b0e]/95 backdrop-blur-lg border-t border-[var(--border)] pt-1 pb-[calc(env(safe-area-inset-bottom)+4px)] px-2 select-none shadow-[0_-8px_24px_rgba(0,0,0,0.7)] flex justify-around items-center">
         {bottomTabs.map(tab => {
           const isActive = activeTab === tab.id;
           const isFemale = activeTab === 'sessions' && sessionsSubTab === 'female';
@@ -1386,30 +1391,30 @@ export default function App() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 flex flex-col items-center justify-center py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 relative cursor-pointer active:scale-95 group",
+                "flex-1 flex flex-col items-center justify-center py-0.5 text-center text-[10px] font-black uppercase tracking-[0.05em] transition-all duration-300 relative cursor-pointer active:scale-95 group",
                 isActive 
                   ? isFemale 
-                    ? "text-[#ff69b4] drop-shadow-[0_0_8px_rgba(255,105,180,0.4)]"
+                    ? "text-[#ff69b4] drop-shadow-[0_0_8px_rgba(255,105,180,0.5)]"
                     : "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent-glow)]" 
                   : "text-[var(--muted)] hover:text-white"
               )}
             >
               <div className={cn(
-                "p-1.5 rounded-xl transition-all duration-300 mb-0.5 flex items-center justify-center",
+                "p-1 rounded-xl transition-all duration-300 mb-0.5 flex items-center justify-center",
                 isActive 
                   ? isFemale 
-                    ? "bg-[#ff69b4]/10"
-                    : "bg-[var(--accent)]/10" 
-                  : "group-hover:bg-white/5"
+                    ? "bg-[#ff69b4]/12 scale-110 border border-[#ff69b4]/20"
+                    : "bg-[var(--accent)]/12 scale-110 border border-[var(--accent)]/20" 
+                  : "group-hover:bg-white/5 border border-transparent"
               )}>
-                <tab.icon size={18} className={cn(isActive && "scale-110", "transition-transform duration-300")} />
+                <tab.icon size={16} className="transition-transform duration-300" />
               </div>
-              <span className="text-[8px] sm:text-[9px] font-bold tracking-tight whitespace-nowrap">{tab.label}</span>
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-tight whitespace-nowrap leading-none">{tab.label}</span>
               {isActive && (
                 <motion.div
                   layoutId="activeBottomTabGlow"
                   className={cn(
-                    "absolute bottom-0 h-[3px] w-6 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]",
+                    "absolute bottom-0 h-[2.5px] w-7 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
                     isFemale ? "bg-[#ff69b4]" : "bg-[var(--accent)]"
                   )}
                   transition={{ type: "spring", stiffness: 350, damping: 30 }}
