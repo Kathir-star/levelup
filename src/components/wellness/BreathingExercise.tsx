@@ -55,8 +55,8 @@ export default function BreathingExercise() {
                 <Wind size={20} />
             </div>
             <div>
-                <h3 className="text-lg font-display font-black text-white italic uppercase">Box Breathing</h3>
-                <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest italic">Anxiety & Focus Control</p>
+                <h3 className="text-lg font-display font-black text-white italic uppercase">Reset your mind. Take control.</h3>
+                <p className="text-[9px] font-black text-red-500 uppercase tracking-widest italic">Core Box Breathing Protocol</p>
             </div>
         </div>
         <div className="flex gap-2">

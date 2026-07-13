@@ -55,8 +55,8 @@ export default function SleepTracker() {
   const quality = getQuality(hours);
 
   return (
-    <div className="glass-card p-6 bg-gradient-to-br from-purple-600/10 to-indigo-500/10 border-purple-500/20 group relative overflow-hidden transition-all hover:shadow-[0_0_30px_rgba(147,51,234,0.1)]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-purple-600/10 to-indigo-500/10 border-purple-500/20 group relative overflow-hidden transition-all hover:shadow-[0_0_30px_rgba(147,51,234,0.1)]">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400">
             <Moon size={20} />
@@ -68,7 +68,7 @@ export default function SleepTracker() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest ml-1">Sleep Time</label>
           <div className="relative">

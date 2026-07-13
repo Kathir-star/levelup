@@ -414,7 +414,7 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
                           <td className="px-4 py-3 font-semibold text-white/90">
                             {log.exerciseName || 'Strength Exercise'}
                             {log.isPR && (
-                              <span className="ml-2 text-[8px] font-black uppercase bg-[var(--yellow)]/10 text-[var(--yellow)] px-1.5 py-0.5 rounded border border-[var(--yellow)]/20 shadow-xs">
+                              <span className="ml-2 text-[8px] font-black uppercase bg-yellow-500 text-black px-2 py-0.5 rounded-sm border border-yellow-400 shadow-[0_0_12px_rgba(255,204,0,0.6)] animate-pr-glow inline-flex items-center gap-1">
                                 🏆 PEAK PR
                               </span>
                             )}

@@ -51,8 +51,8 @@ export default function WaterTracker() {
   const percentage = Math.min(100, Math.round((ml / goal) * 100));
 
   return (
-    <div className="glass-card p-6 bg-gradient-to-br from-blue-600/10 to-cyan-500/10 border-blue-500/20 group relative overflow-hidden transition-all hover:shadow-[0_0_30px_rgba(37,99,235,0.1)]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="glass-card p-4 sm:p-5 bg-gradient-to-br from-blue-600/10 to-cyan-500/10 border-blue-500/20 group relative overflow-hidden transition-all hover:shadow-[0_0_30px_rgba(37,99,235,0.1)]">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
             <Droplets size={20} />
@@ -72,7 +72,7 @@ export default function WaterTracker() {
         </div>
       </div>
 
-      <div className="relative h-4 bg-white/5 rounded-full overflow-hidden mb-6 border border-white/5">
+      <div className="relative h-4 bg-white/5 rounded-full overflow-hidden mb-4 border border-white/5">
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: showProgress ? `${percentage}%` : 0 }}

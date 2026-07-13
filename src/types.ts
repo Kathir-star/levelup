@@ -1,90 +1,72 @@
-export type MuscleGroup = 'Chest' | 'Back' | 'Legs' | 'Biceps' | 'Triceps' | 'Shoulder' | 'Abs' | 'Cardio' | 'Full Body' | 'Glutes' | 'Hamstrings' | 'Quadriceps';
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string;
+  createdAt: string;
+  streakCount: number;
+  lastActiveDate: string;
+  onboardingCompleted: boolean;
+  age?: number;
+  gender?: 'male' | 'female' | 'other';
+  height?: number; // in cm
+  weightTarget?: number; // in kg or lbs
+}
+
+export interface Set {
+  id: string;
+  reps: number;
+  weight: number;
+}
 
 export interface Exercise {
-  name: string;
-  sets: string;
-  reps: string;
-  rest: string;
-  intensity?: 'beginner' | 'intermediate' | 'advanced';
-  image?: string;
-  notes?: string;
-}
-
-export interface DayPlan {
-  day: string;
-  focus: string;
-  rest?: boolean;
-  exercises?: Exercise[];
-  tip?: string;
-  color?: string;
-}
-
-export interface WeeklyPlan {
-  name: string;
-  tip: string;
-  days: DayPlan[];
-}
-
-export interface WorkoutEntry {
-  muscle: MuscleGroup;
-  exerciseName?: string;
-  weight: number;
-  reps: number;
-  sets: number;
-  notes?: string;
-  time: string;
-  date: string;
-  timestamp?: any;
-  isPR?: boolean;
-}
-
-export interface UserProfile {
-  name: string;
-  height?: number;
-  weight?: number;
-  goal?: 'loss' | 'maintain' | 'gain';
-  age?: number;
-  gender?: 'male' | 'female';
-  level?: 'beginner' | 'intermediate' | 'advanced';
-  updatedAt?: any;
-  role?: 'user' | 'admin';
-}
-
-export interface PR {
-  weight: number;
-  reps: number;
-  date: string;
-}
-
-export interface DailyMission {
   id: string;
-  text: string;
-  completed: boolean;
-  xpReward: number;
+  name: string;
+  sets: Set[];
 }
 
-export interface SleepEntry {
-  hours: number;
-  quality: 'Poor' | 'Average' | 'Good';
-  date: string;
+export interface Workout {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  duration: number; // in minutes
+  exercises: Exercise[];
+  notes?: string;
+  intensity?: 'Low' | 'Medium' | 'High';
 }
 
-export interface WaterEntry {
-  amount: number; // in ml
-  date: string;
-  timestamp: string;
+export interface ProgressLog {
+  id: string;
+  userId: string;
+  weight: number; // in kg or lbs
+  bmi: number;
+  bodyFat: number; // percentage
+  date: string; // YYYY-MM-DD
 }
 
-export type MoodType = '😄' | '😐' | '😞' | '😤' | '😴';
-
-export interface MoodEntry {
-  mood: MoodType;
-  date: string;
-  timestamp: string;
+export interface ProteinLog {
+  id: string;
+  userId: string;
+  amount: number; // in grams
+  date: string; // YYYY-MM-DD
 }
 
-export interface UserStats {
-  streak: number;
-  lastWorkout: string;
-  totalWorkouts: number;
+export interface PersonalRecord {
+  id: string;
+  userId: string;
+  exercise: string;
+  weight: number;
+  reps: number;
+  date: string; // YYYY-MM-DD
+}
+
+export interface Badge {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  category: 'workout' | 'streak' | 'pr';
+  unlocked: boolean;
+  unlockedAt?: string;
 }

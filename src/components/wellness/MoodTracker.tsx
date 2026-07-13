@@ -43,7 +43,7 @@ export default function MoodTracker() {
   const last7Days = history.slice(-7);
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-4 shadow-md relative overflow-hidden">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[var(--red)]/10 rounded-xl flex items-center justify-center text-[var(--red)]">

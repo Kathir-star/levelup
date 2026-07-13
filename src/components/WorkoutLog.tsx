@@ -556,8 +556,8 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                                   <div className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
                                     {e.exerciseName || e.muscle}
                                     {e.isPR && (
-                                      <span className="bg-[var(--yellow)]/20 text-[var(--yellow)] text-[8px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-1">
-                                        <Trophy size={8}/> PR
+                                      <span className="bg-yellow-500 text-black text-[8px] px-2 py-0.5 rounded-sm font-black uppercase tracking-wider flex items-center gap-1 animate-pr-glow shadow-[0_0_12px_rgba(255,204,0,0.6)]">
+                                        <Trophy size={8} className="fill-black" /> PR PEAK
                                       </span>
                                     )}
                                   </div>
@@ -678,8 +678,8 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                         </button>
                       )}
                       {n.isPR && (
-                        <span className="px-2 py-0.5 bg-[var(--yellow)]/10 text-[var(--yellow)] rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
-                          <Trophy size={8}/> PR
+                        <span className="px-2 py-0.5 bg-yellow-500 text-black rounded-sm text-[8px] font-black uppercase tracking-wider flex items-center gap-1 animate-pr-glow shadow-[0_0_12px_rgba(255,204,0,0.6)]">
+                          <Trophy size={8} className="fill-black" /> PR BREAKTHROUGH
                         </span>
                       )}
                       <div className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[8px] font-black uppercase tracking-widest">{n.exerciseName || n.muscle}</div>
@@ -706,7 +706,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Object.entries(prs).map(([key, data], i) => (
-              <div key={i} className="glass-card p-5 relative overflow-hidden group border border-[var(--border)] hover:border-[var(--yellow)] transition-all">
+              <div key={i} className="glass-card p-5 relative overflow-hidden group border border-[var(--yellow)]/20 hover:border-[var(--yellow)] transition-all bg-gradient-to-br from-[#121205] to-[#040400]">
                 <div className="absolute top-0 right-0 w-16 h-16 bg-[var(--yellow)]/10 -mr-8 -mt-8 rounded-full blur-xl transition-all" />
                 <div className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mb-1">{data.date}</div>
                 <div className="text-sm font-black uppercase tracking-tight mb-3 text-white capitalize">{key}</div>
