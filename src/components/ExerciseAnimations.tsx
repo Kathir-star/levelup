@@ -452,14 +452,32 @@ const _DEPRECATED_UNUSED_DATA: any[] = [
   }
 ];
 
-export default function ExerciseAnimations() {
+export interface ExerciseAnimationsProps {
+  initialCategory?: 'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO';
+  onCategoryChange?: (category: 'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO') => void;
+}
+
+export default function ExerciseAnimations({ initialCategory, onCategoryChange }: ExerciseAnimationsProps = {}) {
   const [activeEx, setActiveEx] = useState<AnimationSpec>(ANIMATION_SYSTEM_DATA[0]);
   const [tempGender, setTempGender] = useState<'male' | 'female'>('male');
   const [isPlaying, setIsPlaying] = useState(true);
   const [copiedPrompt, setCopiedPrompt] = useState<'male' | 'female' | null>(null);
   const [tabIndex, setTabIndex] = useState<'visual' | 'prompts' | 'lottie' | 'guides'>('visual');
   const [searchTerm, setSearchTerm] = useState('');
-  const [catFilter, setCatFilter] = useState<'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO'>('ALL');
+  const [catFilter, setCatFilter] = useState<'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO'>(initialCategory || 'ALL');
+
+  useEffect(() => {
+    if (initialCategory) {
+      setCatFilter(initialCategory);
+    }
+  }, [initialCategory]);
+
+  const handleCatFilterChange = (cat: 'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO') => {
+    setCatFilter(cat);
+    if (onCategoryChange) {
+      onCategoryChange(cat);
+    }
+  };
 
   // Animation vector coordinate calculator based on simple timer cycle
   const [time, setTime] = useState(0);
@@ -1193,7 +1211,7 @@ export default function ExerciseAnimations() {
           {(['ALL', 'PUSH', 'PULL', 'LEGS', 'CORE', 'MOBILITY', 'CARDIO'] as const).map(cat => (
             <button
               key={cat}
-              onClick={() => setCatFilter(cat)}
+              onClick={() => handleCatFilterChange(cat)}
               className={`py-1.5 px-3 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
                 catFilter === cat 
                   ? "bg-cyan-500 text-black font-black" 

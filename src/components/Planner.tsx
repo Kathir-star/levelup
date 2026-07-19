@@ -31,6 +31,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import CircularTimer from './common/CircularTimer';
 import SessionTimer, { calculateWorkoutDuration } from './common/SessionTimer';
+import PlanGenerator from './common/PlanGenerator';
 import confetti from 'canvas-confetti';
 
 interface PlannerProps {
@@ -254,6 +255,8 @@ export default function Planner({ userName, onProfileUpdate, onAddXp, triggerToa
     // fallback to preset
     return PRESET_WORKOUTS[profile.goal || 'loss'];
   });
+
+  const [schedulerMode, setSchedulerMode] = useState<'classic' | 'ai_generator'>('ai_generator');
 
   // State: Workouts completed today / this week
   const [completedDays, setCompletedDays] = useState<Record<string, boolean>>(() => {
@@ -569,8 +572,51 @@ export default function Planner({ userName, onProfileUpdate, onAddXp, triggerToa
         {activeTabSub === 'scheduler' && (
           <div className="space-y-6 animate-in fade-in duration-500">
             
-            {/* Header / Insight Card */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* AI HUD Mode Selector Segmented Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-900/60 p-2 rounded-2xl border border-white/5 gap-3">
+              <div className="flex items-center gap-2 px-2">
+                <Sparkles size={14} className="text-cyan-400 animate-pulse shrink-0" />
+                <span className="text-[10px] font-black uppercase text-white tracking-widest font-mono">AI Coach Scheduler Protocol</span>
+              </div>
+              <div className="flex bg-neutral-950 p-1 rounded-xl border border-white/5 self-end sm:self-auto">
+                <button
+                  onClick={() => setSchedulerMode('ai_generator')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer whitespace-nowrap",
+                    schedulerMode === 'ai_generator' 
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-neutral-950 font-black shadow-lg shadow-cyan-500/10" 
+                      : "text-neutral-400 hover:text-white"
+                  )}
+                >
+                  ⚡ Adaptive AI Generator
+                </button>
+                <button
+                  onClick={() => setSchedulerMode('classic')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer whitespace-nowrap",
+                    schedulerMode === 'classic' 
+                      ? "bg-white text-neutral-950 font-black shadow-md" 
+                      : "text-neutral-400 hover:text-white"
+                  )}
+                >
+                  📅 Classic Weekly Split
+                </button>
+              </div>
+            </div>
+
+            {schedulerMode === 'ai_generator' ? (
+              <PlanGenerator 
+                userProfile={profile} 
+                onPlanActivated={(newPlan) => {
+                  setSchedulerPlan(newPlan);
+                  localStorage.setItem('lvl_scheduler_plan', JSON.stringify(newPlan));
+                }}
+                triggerToast={triggerToast}
+              />
+            ) : (
+              <>
+                {/* Header / Insight Card */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               <div className="bg-[var(--card)] p-5 border border-[var(--border)] rounded-2xl flex flex-col justify-between">
                 <div>
@@ -765,6 +811,8 @@ export default function Planner({ userName, onProfileUpdate, onAddXp, triggerToa
                 })}
               </div>
             </div>
+              </>
+            )}
 
           </div>
         )}

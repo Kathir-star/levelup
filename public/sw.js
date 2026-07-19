@@ -94,3 +94,50 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// Web Push Notification Event listeners
+self.addEventListener('push', (event) => {
+  let data = { title: 'LevelUp Coach', body: "It's training time, Champion! Log your progress." };
+  
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: 'LevelUp Coach', body: event.data.text() };
+    }
+  }
+
+  const options = {
+    body: data.body || data.message || "Keep up the consistency!",
+    icon: data.icon || '/favicon.ico',
+    badge: data.badge || '/favicon.ico',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: '1'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  // Focus or open application window
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+

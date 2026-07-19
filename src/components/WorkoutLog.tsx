@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { MuscleGroup, WorkoutEntry } from '../types';
 import { cn } from '../lib/utils';
-import { Plus, Search, Filter, MessageSquare, History, Activity, Trophy, CheckCircle2, RefreshCcw, Info, AlertTriangle, ShieldAlert, Trash2, Edit3, Check, X, Calendar } from 'lucide-react';
+import { Plus, Search, Filter, MessageSquare, History, Activity, Trophy, CheckCircle2, RefreshCcw, Info, AlertTriangle, ShieldAlert, Trash2, Edit3, Check, X, Calendar, Database, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface WorkoutLogProps {
@@ -61,6 +61,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
   const [showProgressLockWarning, setShowProgressLockWarning] = useState(false);
   const [msg, setMsg] = useState('');
   const [logState, setLogState] = useState<'idle' | 'logging' | 'success'>('idle');
+  const [backupSuccess, setBackupSuccess] = useState(false);
 
   // Sync draft edits to localStorage
   useEffect(() => {
@@ -719,6 +720,73 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
           </div>
         </div>
       )}
+
+      <div className="space-y-6 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="tab-heading text-lg flex items-center gap-2">
+            <Database size={18} className="text-cyan-400" />
+            Data Portability & Backup
+          </h2>
+        </div>
+        <div className="glass-card p-6 border border-[var(--border)] hover:border-cyan-500/30 transition-all">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h3 className="text-sm font-black uppercase tracking-tight text-white flex items-center gap-2">
+                Secure Training History Backup
+              </h3>
+              <p className="text-xs text-[var(--muted)] leading-relaxed max-w-2xl">
+                Export your full training log, exercise history, and personal records (PRs) as an offline-compatible JSON file. This allows you to safely back up your data, import it on other devices, or run custom data analytics.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  try {
+                    const dataObj = {
+                      workoutData: fullHistory || {},
+                      prs: prs || {},
+                      exportedAt: new Date().toISOString(),
+                      totalSessions: Object.values(fullHistory || {}).flat().length,
+                      deviceUid: localStorage.getItem('lv_session_uid') || 'local-user',
+                      appVersion: "1.1.0"
+                    };
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `levelup_workout_backup_${new Date().toLocaleDateString('en-CA')}.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                    
+                    setBackupSuccess(true);
+                    setTimeout(() => setBackupSuccess(false), 4000);
+                  } catch (err) {
+                    console.error("Backup failed:", err);
+                  }
+                }}
+                className="py-3 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-black font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10 active:scale-[0.98]"
+              >
+                <Download size={14} />
+                Download JSON Backup
+              </button>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {backupSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-3 text-xs text-cyan-400 font-bold overflow-hidden"
+              >
+                <CheckCircle2 size={16} className="text-cyan-400 shrink-0" />
+                <span>Backup successful! File saved: <strong>levelup_workout_backup_{new Date().toLocaleDateString('en-CA')}.json</strong>. Your training history is fully secured.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }

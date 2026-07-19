@@ -4,6 +4,8 @@ import { calculateStreak, cn } from './lib/utils';
 import { QUOTES, TAMIL_QUOTES } from './constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import VoiceButton from './components/VoiceButton';
+import { ALL_50_EXERCISES } from './components/ExercisePromptLibrary';
 import { 
   LayoutDashboard, 
   Footprints, 
@@ -151,6 +153,7 @@ export default function App() {
   const [activeWorkout, setActiveWorkout] = useState<{ muscle: MuscleGroup; exercise: Exercise } | null>(null);
   const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
   const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
+  const [animationsCategory, setAnimationsCategory] = useState<'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO'>('ALL');
   const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
   const [showAICoachModal, setShowAICoachModal] = useState(false);
   const [fabHovered, setFabHovered] = useState(false);
@@ -847,6 +850,48 @@ export default function App() {
     setActiveWorkout({ muscle, exercise });
   };
 
+  const startVoiceWorkout = (muscle: MuscleGroup) => {
+    const exerciseSpec = ALL_50_EXERCISES.find(ex => 
+      ex.targetMuscles.some((m: string) => m.toLowerCase() === muscle.toLowerCase()) ||
+      ex.category.toLowerCase() === muscle.toLowerCase()
+    ) || ALL_50_EXERCISES[0];
+
+    const exercise: Exercise = {
+      name: exerciseSpec.name,
+      sets: "3",
+      reps: "12",
+      rest: "45s",
+      intensity: "beginner",
+      image: "",
+      notes: "Voice initiated guided workout"
+    };
+
+    startGuidedWorkout(muscle, exercise);
+    addToast(`🏋️ Starting voice workout: ${exercise.name}!`, "success");
+  };
+
+  const addVoiceCalories = (amount: number) => {
+    const entry: WorkoutEntry = {
+      muscle: 'Full Body',
+      exerciseName: 'Nutrition Entry',
+      weight: 0,
+      reps: 0,
+      sets: 0,
+      notes: `Logged ${amount} calories via Jarvis Voice Coach`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: today
+    };
+    handleLogWorkout(entry);
+    addToast(`🍎 Logged nutrition entry: +${amount} calories!`, "success");
+  };
+
+  const addVoiceWater = (amount: number) => {
+    const todayWater = water[today] || 0;
+    const newWater = todayWater + amount;
+    handleWaterChange(newWater);
+    addToast(`💧 Hydration update: +${amount}ml!`, "success");
+  };
+
   const completeWorkout = (duration: number) => {
     if (!activeWorkout) return;
     
@@ -1202,7 +1247,12 @@ export default function App() {
               {sessionsSubTab === 'male' && <StructuredPlans gender="male" />}
               {sessionsSubTab === 'female' && <StructuredPlans gender="female" />}
               {sessionsSubTab === 'home' && <HomeWorkout />}
-              {sessionsSubTab === 'animations' && <ExerciseAnimations />}
+              {sessionsSubTab === 'animations' && (
+                <ExerciseAnimations 
+                  initialCategory={animationsCategory} 
+                  onCategoryChange={setAnimationsCategory} 
+                />
+              )}
             </div>
           </div>
         )}
@@ -1238,6 +1288,11 @@ export default function App() {
             waterGoal={8} 
             missions={missions}
             completeMission={completeMission}
+            setActiveTab={setActiveTab}
+            setSessionsSubTab={setSessionsSubTab}
+            setAnimationsCategory={setAnimationsCategory}
+            onAddXp={handleAddXp}
+            triggerToast={(msg, type) => addToast(msg, type || 'info')}
           />
         )}
 
@@ -1553,14 +1608,14 @@ export default function App() {
       </AnimatePresence>
 
       {/* Global Toast Alert Toaster Container */}
-      <div className="fixed top-6 right-6 z-[999] max-w-sm w-full space-y-3 pointer-events-none">
+      <div className="fixed bottom-5 left-5 right-5 md:top-6 md:right-6 md:left-auto md:bottom-auto z-[100000] max-w-sm w-auto md:w-full space-y-3 pointer-events-none">
         <AnimatePresence>
           {toasts.map(toast => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 50, scale: 0.9 }}
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
               onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
               className={cn(
                 "p-4 rounded-2xl border backdrop-blur-lg flex items-start gap-3 shadow-xl pointer-events-auto cursor-pointer",
@@ -1613,6 +1668,17 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {username && (
+        <VoiceButton
+          userProfile={userProfile}
+          startWorkout={startVoiceWorkout}
+          addCalories={addVoiceCalories}
+          addWater={addVoiceWater}
+          setActiveTab={setActiveTab}
+          addToast={addToast}
+        />
+      )}
 
     </div>
   );

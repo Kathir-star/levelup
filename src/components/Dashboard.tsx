@@ -5,6 +5,9 @@ import BreathingExercise from './wellness/BreathingExercise';
 import WaterTracker from './WaterTracker';
 import SleepTracker from './SleepTracker';
 import ErrorBoundary from './ErrorBoundary';
+import ProgressRing from './common/ProgressRing';
+import AnimatedCard from './common/AnimatedCard';
+import TodayPlanPanel from './common/TodayPlanPanel';
 import { WorkoutEntry, UserProfile, DailyMission } from '../types';
 import { cn } from '../lib/utils';
 import { 
@@ -28,6 +31,10 @@ interface DashboardProps {
   missions: DailyMission[];
   completeMission: (id: string, text: string, xpReward: number) => void;
   setActiveTab?: (tab: string) => void;
+  setSessionsSubTab?: (subTab: 'male' | 'female' | 'home' | 'animations') => void;
+  setAnimationsCategory?: (category: 'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO') => void;
+  onAddXp?: (xp: number) => void;
+  triggerToast?: (msg: string, type?: string) => void;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -65,7 +72,11 @@ export default function Dashboard({
   waterGoal, 
   missions, 
   completeMission, 
-  setActiveTab 
+  setActiveTab,
+  setSessionsSubTab,
+  setAnimationsCategory,
+  onAddXp,
+  triggerToast
 }: DashboardProps) {
   const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
   const [calOffset, setCalOffset] = useState(0);
@@ -541,6 +552,12 @@ export default function Dashboard({
               if (setActiveTab) {
                 setActiveTab('sessions');
               }
+              if (setSessionsSubTab) {
+                setSessionsSubTab('animations');
+              }
+              if (setAnimationsCategory) {
+                setAnimationsCategory('MOBILITY');
+              }
             }}
             className="w-full mt-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-display font-black text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-red-600/15"
           >
@@ -648,6 +665,13 @@ export default function Dashboard({
           />
         </div>
       </div>
+
+      {/* Today's Adaptive AI Protocol Plan */}
+      <TodayPlanPanel 
+        userProfile={profile} 
+        onAddXp={onAddXp} 
+        triggerToast={triggerToast} 
+      />
 
       {/* ⚔️ Weekly Challenge Card System */}
       <div className="glass-card p-4 sm:p-5 bg-gradient-to-r from-purple-500/5 to-pink-500/10 border border-purple-500/20 rounded-2xl relative overflow-hidden group shadow-sm">
@@ -1056,68 +1080,87 @@ export default function Dashboard({
         <SleepTracker />
       </div>
 
-      {/* KPI Row */}
+      {/* KPI Row - Futuristic Progress Rings */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--blue)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--blue)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-3 leading-none">
-               <div className="w-8 h-8 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)] border border-[var(--blue)]/10 shrink-0">
-                  <Footprints size={16} />
-               </div>
-               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Steps</span>
-            </div>
-            <div>
-               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{(steps[today] || 0).toLocaleString()}</div>
-               <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-white/[0.03]">
-                  <div className="flex-1 h-1 bg-[var(--sub)] rounded-full overflow-hidden">
-                     <div className="h-full bg-[var(--blue)]" style={{ width: `${Math.min(100, ((steps[today] || 0) / 10000) * 100)}%` }} />
-                  </div>
-                  <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-tight shrink-0">Goal: 10K</span>
-               </div>
-            </div>
-         </div>
+        <AnimatedCard 
+          glowColor="rgba(6, 182, 212, 0.25)"
+          className="p-4 flex flex-col items-center justify-center text-center relative"
+        >
+          <ProgressRing
+            progress={Math.min(100, ((steps[today] || 0) / 10000) * 100)}
+            size={110}
+            strokeWidth={7}
+            gradientId="stepsGrad"
+            startColor="#0284c7"
+            endColor="#06b6d4"
+            icon={<Footprints size={18} className="text-cyan-400" />}
+            label="Steps"
+            valueString={(steps[today] || 0).toLocaleString()}
+          />
+          <div className="mt-2 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+            Goal: 10,000 steps
+          </div>
+        </AnimatedCard>
 
-         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--red)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--red)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-3 leading-none">
-               <div className="w-8 h-8 bg-[var(--red)]/10 rounded-xl flex items-center justify-center text-[var(--red)] border border-[var(--red)]/10 shrink-0">
-                  <Zap size={16} />
-               </div>
-               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Burn</span>
-            </div>
-            <div>
-               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{calories}</div>
-               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Kcal Today</p>
-            </div>
-         </div>
+        <AnimatedCard 
+          glowColor="rgba(239, 68, 68, 0.25)"
+          className="p-4 flex flex-col items-center justify-center text-center relative"
+        >
+          <ProgressRing
+            progress={Math.min(100, (calories / 2000) * 100)}
+            size={110}
+            strokeWidth={7}
+            gradientId="caloriesGrad"
+            startColor="#ef4444"
+            endColor="#f97316"
+            icon={<Zap size={18} className="text-orange-500 animate-pulse" />}
+            label="Kcal Burnt"
+            valueString={`${calories}`}
+          />
+          <div className="mt-2 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+            Goal: 2,000 kcal
+          </div>
+        </AnimatedCard>
 
-         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--green)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--green)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-3 leading-none">
-               <div className="w-8 h-8 bg-[var(--green)]/10 rounded-xl flex items-center justify-center text-[var(--green)] border border-[var(--green)]/10 shrink-0">
-                  <Activity size={16} />
-               </div>
-               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Time</span>
-            </div>
-            <div>
-               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{workoutTime}m</div>
-               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Active time</p>
-            </div>
-         </div>
+        <AnimatedCard 
+          glowColor="rgba(16, 185, 129, 0.25)"
+          className="p-4 flex flex-col items-center justify-center text-center relative"
+        >
+          <ProgressRing
+            progress={Math.min(100, (workoutTime / 45) * 100)}
+            size={110}
+            strokeWidth={7}
+            gradientId="timeGrad"
+            startColor="#10b981"
+            endColor="#34d399"
+            icon={<Activity size={18} className="text-emerald-400" />}
+            label="Active Time"
+            valueString={`${workoutTime} min`}
+          />
+          <div className="mt-2 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+            Goal: 45 min
+          </div>
+        </AnimatedCard>
 
-         <div className="glass-card p-3 sm:p-4 rounded-xl flex flex-col justify-between group overflow-hidden relative shadow-sm">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--blue)]/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-[var(--blue)]/10 transition-all" />
-            <div className="flex items-center justify-between mb-3 leading-none">
-               <div className="w-8 h-8 bg-[var(--blue)]/10 rounded-xl flex items-center justify-center text-[var(--blue)] border border-[var(--blue)]/10 shrink-0">
-                  <Droplets size={16} />
-               </div>
-               <span className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Water</span>
-            </div>
-            <div>
-               <div className="text-2xl sm:text-3xl font-black tracking-tighter text-white">{water}/{waterGoal}</div>
-               <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 pt-1.5 border-t border-white/[0.03] leading-none">Logged Glass</p>
-            </div>
-         </div>
+        <AnimatedCard 
+          glowColor="rgba(59, 130, 246, 0.25)"
+          className="p-4 flex flex-col items-center justify-center text-center relative"
+        >
+          <ProgressRing
+            progress={Math.min(100, (water / waterGoal) * 100)}
+            size={110}
+            strokeWidth={7}
+            gradientId="waterGrad"
+            startColor="#2563eb"
+            endColor="#3b82f6"
+            icon={<Droplets size={18} className="text-blue-400" />}
+            label="Water Intake"
+            valueString={`${water}/${waterGoal}`}
+          />
+          <div className="mt-2 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+            Logged Intake
+          </div>
+        </AnimatedCard>
       </div>
 
       {/* Live Data Chain Section */}
@@ -1159,24 +1202,28 @@ export default function Dashboard({
           </div>
           <div className="h-64 w-full">
             <ErrorBoundary>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorCals" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                    itemStyle={{ color: 'var(--text)' }}
-                  />
-                  <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {!chartData || chartData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]">No trend data available</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorCals" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                      itemStyle={{ color: 'var(--text)' }}
+                    />
+                    <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </ErrorBoundary>
           </div>
         </div>
@@ -1191,18 +1238,22 @@ export default function Dashboard({
           </div>
           <div className="h-72 w-full">
             <ErrorBoundary>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    cursor={{ fill: 'var(--sub)' }}
-                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}
-                  />
-                  <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
+              {!chartData || chartData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-xs text-[var(--muted)]">No activity data available</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      cursor={{ fill: 'var(--sub)' }}
+                      contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}
+                    />
+                    <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </ErrorBoundary>
           </div>
         </div>
