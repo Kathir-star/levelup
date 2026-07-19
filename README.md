@@ -21,7 +21,7 @@
 ## 🌍 Live Product
 
 🚀 **Launch App:**  
-👉 https://your-levelup-app.vercel.app
+👉[ https://your-levelup-app.vercel.app](https://levelupone.vercel.app/?v=1784427418018) 
 
 📦 **Repository:**  
 👉 https://github.com/Kathir-star/levelup
@@ -108,20 +108,6 @@ Most fitness apps fail because:
 - In-app alerts
 - Streak reminders
 - AI feedback messages
-
----
-
-## 🖼️ Screenshots
-
-<p align="center">
-  <img src="./public/screens/dashboard.png" width="400"/>
-  <img src="./public/screens/workout.png" width="400"/>
-</p>
-
-<p align="center">
-  <img src="./public/screens/gamification.png" width="400"/>
-  <img src="./public/screens/progress.png" width="400"/>
-</p>
 
 ---
 
