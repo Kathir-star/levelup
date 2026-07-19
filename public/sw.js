@@ -32,12 +32,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. ALWAYS go Network-Only for version.json and Firebase/API endpoints so they are never cached/stale
+  // 1. ALWAYS go Network-Only for version.json and API endpoints so they are never cached/stale
   if (
     url.pathname.includes('version.json') || 
-    url.pathname.includes('/api/') || 
-    event.request.url.includes('firestore.googleapis.com') ||
-    event.request.url.includes('firebase')
+    url.pathname.includes('/api/')
   ) {
     event.respondWith(fetch(event.request));
     return;
