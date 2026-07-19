@@ -52,7 +52,6 @@ import StructuredPlans from './components/StructuredPlans';
 import ExerciseAnimations from './components/ExerciseAnimations';
 import Logo from './components/common/Logo';
 import NotificationSettings from './components/NotificationSettings';
-import PostureCheck from './components/PostureCheck';
 import SelfMastery from './components/SelfMastery';
 
 
@@ -157,6 +156,14 @@ export default function App() {
   const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
   const [showAICoachModal, setShowAICoachModal] = useState(false);
   const [fabHovered, setFabHovered] = useState(false);
+  const [jarvisEnabled, setJarvisEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('lvl_jarvis_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lvl_jarvis_enabled', String(jarvisEnabled));
+  }, [jarvisEnabled]);
 
   useEffect(() => {
     // Hide splash screen after 2.5 seconds
@@ -407,7 +414,6 @@ export default function App() {
 
   // Smart Advanced States
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showPostureModal, setShowPostureModal] = useState(false);
   const [showChangeNameModal, setShowChangeNameModal] = useState(false);
   const [newNameInput, setNewNameInput] = useState('');
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -1144,6 +1150,18 @@ export default function App() {
                 <RefreshCcw size={14} />
               </button>
               <button 
+                onClick={() => setJarvisEnabled(!jarvisEnabled)}
+                className={cn(
+                  "w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all shadow-sm flex items-center justify-center shrink-0 cursor-pointer border",
+                  jarvisEnabled 
+                    ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.15)]" 
+                    : "bg-[var(--card)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                )}
+                title={jarvisEnabled ? "Disable Jarvis AI Coach" : "Enable Jarvis AI Coach"}
+              >
+                <Brain size={14} className={jarvisEnabled ? "animate-pulse text-cyan-400" : ""} />
+              </button>
+              <button 
                 onClick={toggleVoice}
                 className={cn(
                   "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] transition-all shadow-sm hidden sm:flex items-center justify-center shrink-0 cursor-pointer",
@@ -1219,27 +1237,6 @@ export default function App() {
                     </button>
                   );
                 })}
-              </div>
-            </div>
-
-            {/* AI Posture Guard Quick Launch Banner */}
-            <div className="flex justify-center px-4">
-              <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 max-w-sm sm:max-w-md w-full p-4 rounded-2xl flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
-                    <ShieldCheck size={18} />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-white">Posture Guard</h4>
-                    <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest leading-none mt-0.5">Skeletal Calibration Beta</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowPostureModal(true)}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 font-display font-black text-[9px] uppercase tracking-widest text-white rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
-                >
-                  Postures Check
-                </button>
               </div>
             </div>
 
@@ -1523,24 +1520,6 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showPostureModal && (
-          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-md overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="w-full max-w-4xl"
-            >
-              <PostureCheck 
-                onClose={() => setShowPostureModal(false)} 
-                activeExercise={activeWorkout ? activeWorkout.exercise.name : 'Squat'} 
-              />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showChangeNameModal && (
           <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
             <motion.div
@@ -1669,7 +1648,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {username && (
+      {username && jarvisEnabled && (
         <VoiceButton
           userProfile={userProfile}
           startWorkout={startVoiceWorkout}
@@ -1677,6 +1656,7 @@ export default function App() {
           addWater={addVoiceWater}
           setActiveTab={setActiveTab}
           addToast={addToast}
+          onDisable={() => setJarvisEnabled(false)}
         />
       )}
 

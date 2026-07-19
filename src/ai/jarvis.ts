@@ -24,6 +24,7 @@ export class JarvisController {
   private isThinking: boolean = false;
   private isSpeaking: boolean = false;
   private userProfile: UserProfile | null = null;
+  private voiceMode: boolean = true;
 
   constructor(handlers: JarvisHandlers, userProfile?: UserProfile) {
     this.handlers = handlers;
@@ -66,13 +67,46 @@ export class JarvisController {
     if (this.voice) {
       this.voice.stop();
     }
+    stopSpeaking();
+  }
+
+  public setVoiceMode(enabled: boolean) {
+    this.voiceMode = enabled;
+    if (!enabled) {
+      stopSpeaking();
+      this.isSpeaking = false;
+      this.handlers.onSpeakingChange?.(false);
+    }
   }
 
   public async speakResponse(text: string) {
+    if (!this.voiceMode) {
+      this.isSpeaking = false;
+      this.handlers.onSpeakingChange?.(false);
+      return;
+    }
+
     this.isSpeaking = true;
     this.handlers.onSpeakingChange?.(true);
     
-    speak(text, {
+    // Strip markdown formatting for cleaner speech synthesis
+    let cleanText = text
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/#/g, '')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\|/g, ' ')
+      .replace(/[-*]\s+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Limit length spoken so long nutrition tables aren't gabbled forever
+    if (cleanText.length > 300) {
+      cleanText = cleanText.substring(0, 280) + "... details are displayed on your screen, Champion!";
+    }
+
+    speak(cleanText, {
       onStart: () => {},
       onEnd: () => {
         this.isSpeaking = false;
@@ -188,13 +222,19 @@ export class JarvisController {
       const result = await response.json();
       
       if (result.intent && result.intent !== 'UNKNOWN') {
-        // Expose triggers returned from backend
-        const parsed: ParsedCommand = {
-          intent: result.intent as CommandIntentType,
-          confidence: 1.0,
-          extractedData: result.extractedData
-        };
-        await this.executeIntent(parsed, rawText);
+        if (result.intent === 'DIET_PLAN' || result.intent === 'WORKOUT_SPLIT') {
+          const speech = result.response || "Here is your plan, Champion!";
+          this.handlers.onResponse?.(speech);
+          await this.speakResponse(speech);
+        } else {
+          // Expose triggers returned from backend
+          const parsed: ParsedCommand = {
+            intent: result.intent as CommandIntentType,
+            confidence: 1.0,
+            extractedData: result.extractedData
+          };
+          await this.executeIntent(parsed, rawText);
+        }
       } else {
         const speech = result.response || "I am connected, but wasn't able to map that. Try 'start chest workout' or 'track 500 calories'.";
         this.handlers.onResponse?.(speech);

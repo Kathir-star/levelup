@@ -17,7 +17,7 @@ export default defineConfig({
     host: true,
     port: 3000,
     strictPort: true,
-    hmr: {
+    hmr: process.env.DISABLE_HMR === 'true' ? false : {
       protocol: 'wss',
       host: 'ais-dev-abpyzgtehgloftmrbpss3v-708515236167.asia-east1.run.app',
       clientPort: 443

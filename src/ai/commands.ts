@@ -9,6 +9,8 @@ export type CommandIntentType =
   | 'GO_TO_TAB'
   | 'MOTIVATION'
   | 'GREETING'
+  | 'DIET_PLAN'
+  | 'WORKOUT_SPLIT'
   | 'UNKNOWN';
 
 export interface ParsedCommand {
