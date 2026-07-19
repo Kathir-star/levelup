@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, CameraOff, Sparkles, Activity, ShieldCheck, RefreshCw, Zap, Sliders, Play, Award } from 'lucide-react';
 import { cn } from '../lib/utils';
 

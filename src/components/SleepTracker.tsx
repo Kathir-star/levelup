@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Moon, Clock, Info } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function SleepTracker() {
   const [sleepTime, setSleepTime] = useState('22:00');

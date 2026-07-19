@@ -4,7 +4,7 @@ import {
   Play, Sparkles, X, BellOff, CheckCheck, RefreshCw, Smartphone
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface NotificationSettingsProps {
   onClose: () => void;

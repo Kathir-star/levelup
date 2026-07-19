@@ -3,7 +3,7 @@ import { MuscleGroup, Exercise } from '../types';
 import { EXERCISE_LIB } from '../constants';
 import { cn } from '../lib/utils';
 import { Play, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MuscleVisualizerProps {
   onStartWorkout: (muscle: MuscleGroup, exercise: Exercise) => void;

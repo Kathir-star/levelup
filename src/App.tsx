@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MuscleGroup, Exercise, WorkoutEntry, UserProfile, PR, SleepEntry, DailyMission } from './types';
 import { calculateStreak, cn } from './lib/utils';
 import { QUOTES, TAMIL_QUOTES } from './constants';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { 
   LayoutDashboard, 
@@ -52,10 +52,6 @@ import Logo from './components/common/Logo';
 import NotificationSettings from './components/NotificationSettings';
 import PostureCheck from './components/PostureCheck';
 import SelfMastery from './components/SelfMastery';
-import { db, auth, messaging } from './firebase';
-import { signInAnonymously } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getToken } from 'firebase/messaging';
 
 
 function SplashScreen() {
@@ -151,7 +147,7 @@ export default function App() {
   const [updateDetails, setUpdateDetails] = useState<{ version: string; message: string } | null>(null);
   const [isUpdateModalDelayed, setIsUpdateModalDelayed] = useState(false);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
-  const [firebaseUid, setFirebaseUid] = useState<string | null>(localStorage.getItem('lv_firebase_uid'));
+  const [sessionUid, setSessionUid] = useState<string | null>(localStorage.getItem('lv_session_uid'));
   const [activeWorkout, setActiveWorkout] = useState<{ muscle: MuscleGroup; exercise: Exercise } | null>(null);
   const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
   const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
@@ -232,42 +228,19 @@ export default function App() {
     }, 1000);
   };
 
-  const getAndSaveFCMToken = async (uid: string) => {
-    if (!messaging) return;
-    try {
-      const token = await getToken(messaging, {
-        vapidKey: "BP8O3G4J7iUymX1U8eEaL37q_605Yd-6fN7mPscZIDY516d5R84S9431g8UvG_zXp91w6Yt"
-      });
-      if (token) {
-        setFcmToken(token);
-        const tokenRef = doc(db, 'users', uid, 'fcm_tokens', token.substring(0, 32));
-        await setDoc(tokenRef, {
-          token: token,
-          updatedAt: serverTimestamp()
-        });
-        console.log("FCM registration token captured and saved in database:", token);
-      }
-    } catch (err) {
-      console.warn("FCM Token capture bypassed or failed:", err);
-    }
-  };
-
-  const setupPushNotifications = async (uid: string) => {
+  const setupPushNotifications = async () => {
     if (!('Notification' in window)) return;
 
-    if (Notification.permission === 'granted') {
-      await getAndSaveFCMToken(uid);
-    } else if (Notification.permission === 'default') {
+    if (Notification.permission === 'default') {
       // Small delayed trigger to prompt user after engagement
       setTimeout(async () => {
         try {
           const result = await Notification.requestPermission();
           if (result === 'granted') {
             addToast("🔔 Push updates configured!", "success");
-            await getAndSaveFCMToken(uid);
           }
         } catch (err) {
-          console.warn("FCM request failed or restricted in environment:", err);
+          console.warn("Notification request failed or restricted in environment:", err);
         }
       }, 5000);
     }
@@ -302,19 +275,16 @@ export default function App() {
 
   const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
 
-  // 1. Firebase Anonymous auth sync & notification setup on land
+  // 1. Local user session sync & notification setup on land
   useEffect(() => {
-    signInAnonymously(auth)
-      .then((userCredential) => {
-        const uid = userCredential.user.uid;
-        setFirebaseUid(uid);
-        localStorage.setItem('lv_firebase_uid', uid);
-        console.log("Firebase synchronized. Session secure:", uid);
-        setupPushNotifications(uid);
-      })
-      .catch((err) => {
-        console.warn("Firebase Auth failed (graceful bypass):", err);
-      });
+    let uid = localStorage.getItem('lv_session_uid');
+    if (!uid) {
+      uid = 'local-user-' + Math.random().toString(36).substring(2, 11);
+      localStorage.setItem('lv_session_uid', uid);
+    }
+    setSessionUid(uid);
+    console.log("Local session secured. Sync complete:", uid);
+    setupPushNotifications();
   }, []);
 
   // 2. Initial version check & interval scheduler (every 12 minutes)

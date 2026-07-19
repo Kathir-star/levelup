@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Smile, Heart, TrendingUp, Calendar } from 'lucide-react';
 import { MoodType, MoodEntry } from '../../types';
 import { cn } from '../../lib/utils';

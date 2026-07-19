@@ -4,15 +4,19 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { TrendingUp, Award, BarChart3, HelpCircle, Dumbbell, Zap, ZoomIn, Search } from 'lucide-react';
 import { cn } from '../lib/utils';
 import D3ZoomableChart from './D3ZoomableChart';
+import ErrorBoundary from './ErrorBoundary';
 
 interface MuscleProgressChartsProps {
-  data: Record<string, WorkoutEntry[]>;
-  prs: Record<string, { weight: number, reps: number, date: string }>;
+  data?: Record<string, WorkoutEntry[]>;
+  prs?: Record<string, { weight: number, reps: number, date: string }>;
 }
 
-export default function MuscleProgressCharts({ data, prs }: MuscleProgressChartsProps) {
+export default function MuscleProgressCharts({ data = {}, prs = {} }: MuscleProgressChartsProps) {
   const [inspectingMuscle, setInspectingMuscle] = useState<string | null>(null);
-  const allEntries = useMemo(() => Object.values(data).flat(), [data]);
+  const allEntries = useMemo(() => {
+    if (!data) return [];
+    return Object.values(data).flat();
+  }, [data]);
 
   const selectedMuscleEntries = useMemo(() => {
     if (!inspectingMuscle) return [];
@@ -29,10 +33,12 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
     const stats: Record<string, { sessions: number; maxWeight: number; totalVolume: number; history: { date: string; weight: number }[] }> = {};
     
     // Sort allEntries by date to get chronological history
-    const sortedEntries = [...allEntries].sort((a, b) => a.date.localeCompare(b.date));
+    const sortedEntries = [...allEntries]
+      .filter(e => e && e.date && e.muscle)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     sortedEntries.forEach(e => {
-      let m = e.muscle.trim();
+      let m = e.muscle ? e.muscle.trim() : '';
       if (!m) return;
       
       // Capitalize first letter, lowercase the rest
@@ -45,12 +51,16 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
       if (!stats[normalized]) {
         stats[normalized] = { sessions: 0, maxWeight: 0, totalVolume: 0, history: [] };
       }
+      const weight = Number(e.weight) || 0;
+      const reps = Number(e.reps) || 1;
+      const sets = Number(e.sets) || 1;
+
       stats[normalized].sessions += 1;
-      stats[normalized].maxWeight = Math.max(stats[normalized].maxWeight, e.weight);
-      stats[normalized].totalVolume += e.weight * (e.reps || 1) * (e.sets || 1);
+      stats[normalized].maxWeight = Math.max(stats[normalized].maxWeight, weight);
+      stats[normalized].totalVolume += weight * reps * sets;
       stats[normalized].history.push({ 
-        date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
-        weight: e.weight 
+        date: e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '', 
+        weight: weight 
       });
     });
 
@@ -271,30 +281,32 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
                     </div>
                   )}
                   {hasLogs ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={s.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <Line 
-                          type="monotone" 
-                          dataKey="weight" 
-                          stroke="var(--accent)" 
-                          strokeWidth={3} 
-                          dot={{ r: 4, strokeWidth: 1 }}
-                          activeDot={{ r: 6, strokeWidth: 2 }}
-                          animationDuration={1500}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'var(--card2)', 
-                            border: '1px solid var(--border)', 
-                            borderRadius: '12px', 
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-                          }}
-                          itemStyle={{ color: '#fff' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <ErrorBoundary>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={s.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <Line 
+                            type="monotone" 
+                            dataKey="weight" 
+                            stroke="var(--accent)" 
+                            strokeWidth={3} 
+                            dot={{ r: 4, strokeWidth: 1 }}
+                            activeDot={{ r: 6, strokeWidth: 2 }}
+                            animationDuration={1500}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'var(--card2)', 
+                              border: '1px solid var(--border)', 
+                              borderRadius: '12px', 
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+                            }}
+                            itemStyle={{ color: '#fff' }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </ErrorBoundary>
                   ) : (
                     <div className="text-center py-8 flex flex-col items-center justify-center select-none w-full border border-dashed border-[var(--border)] rounded-2xl bg-black/10">
                       <HelpCircle size={22} className="text-[var(--muted)] mb-2 animate-pulse" />
@@ -346,6 +358,7 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
         </div>
         
         <div className="h-80 w-full">
+          <ErrorBoundary>
            <ResponsiveContainer width="100%" height="100%">
              <BarChart data={muscles.map(m => ({ name: m, weight: muscleStats[m]?.maxWeight || 0 }))} margin={{ left: -20 }}>
                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -358,6 +371,7 @@ export default function MuscleProgressCharts({ data, prs }: MuscleProgressCharts
                <Bar dataKey="weight" fill="var(--accent)" radius={[8, 8, 0, 0]} barSize={40} />
              </BarChart>
            </ResponsiveContainer>
+          </ErrorBoundary>
         </div>
       </div>
 

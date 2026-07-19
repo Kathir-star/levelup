@@ -17,7 +17,7 @@ import {
   Sliders,
   Maximize2
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { ALL_50_EXERCISES } from './ExercisePromptLibrary';
 

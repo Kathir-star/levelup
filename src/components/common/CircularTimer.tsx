@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, X, Volume2, VolumeX, FastForward } from 'lucide-react';
 import { cn } from '../../lib/utils';
 

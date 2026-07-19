@@ -25,7 +25,7 @@ import {
   PlusCircle,
   Calendar
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 interface SelfMasteryProps {

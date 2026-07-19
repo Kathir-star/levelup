@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { MuscleGroup, WorkoutEntry } from '../types';
 import { cn } from '../lib/utils';
 import { Plus, Search, Filter, MessageSquare, History, Activity, Trophy, CheckCircle2, RefreshCcw, Info, AlertTriangle, ShieldAlert, Trash2, Edit3, Check, X, Calendar } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface WorkoutLogProps {
   onLog: (entry: WorkoutEntry) => void;

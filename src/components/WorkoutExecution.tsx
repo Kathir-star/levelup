@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MuscleGroup, Exercise } from '../types';
 import { cn } from '../lib/utils';
 import { Play, Pause, RotateCcw, X, CheckCircle2, Flame, Trophy, Star } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CircularTimer from './common/CircularTimer';
 import { MOTIVATIONAL_MESSAGES, TAMIL_MOTIVATIONAL_MESSAGES } from '../constants';
 import confetti from 'canvas-confetti';

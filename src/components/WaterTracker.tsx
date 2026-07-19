@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
 import { Droplets, GlassWater, RotateCcw, Plus, Settings } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function WaterTracker() {
   const [ml, setMl] = useState(0);

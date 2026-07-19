@@ -4,6 +4,7 @@ import MoodTracker from './wellness/MoodTracker';
 import BreathingExercise from './wellness/BreathingExercise';
 import WaterTracker from './WaterTracker';
 import SleepTracker from './SleepTracker';
+import ErrorBoundary from './ErrorBoundary';
 import { WorkoutEntry, UserProfile, DailyMission } from '../types';
 import { cn } from '../lib/utils';
 import { 
@@ -15,7 +16,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, AreaChart, Area, Cell 
 } from 'recharts';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import canvasConfetti from 'canvas-confetti';
 
 interface DashboardProps {
@@ -66,6 +67,7 @@ export default function Dashboard({
   completeMission, 
   setActiveTab 
 }: DashboardProps) {
+  const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
   const [calOffset, setCalOffset] = useState(0);
   const [calories, setCalories] = useState(0);
   const [workoutTime, setWorkoutTime] = useState(0);
@@ -84,6 +86,50 @@ export default function Dashboard({
   // Custom screen notifications
   const [innerNotification, setInnerNotification] = useState<string | null>(null);
 
+  // LevelUp Custom States
+  const [sakthiMultiplier, setSakthiMultiplier] = useState<number>(() => {
+    return Number(localStorage.getItem('lvl_multiplier') || '14');
+  });
+
+  const [habitsChecked, setHabitsChecked] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(`lvl_habits_${today}`);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const toggleHabit = (id: string) => {
+    const updated = { ...habitsChecked, [id]: !habitsChecked[id] };
+    setHabitsChecked(updated);
+    localStorage.setItem(`lvl_habits_${today}`, JSON.stringify(updated));
+
+    // Sound feedback + XP reward
+    const reward = updated[id] ? 10 : -10;
+    const currentXp = parseInt(localStorage.getItem('user-xp') || '0');
+    const nextXp = Math.max(0, currentXp + reward);
+    localStorage.setItem('user-xp', String(nextXp));
+    setXp(nextXp);
+
+    // Trigger local storage storage event
+    window.dispatchEvent(new Event('storage'));
+
+    if (updated[id]) {
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 note
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {}
+    }
+  };
+
   // Retrieve current XP from localStorage
   useEffect(() => {
     const savedXp = localStorage.getItem('user-xp');
@@ -100,8 +146,6 @@ export default function Dashboard({
   const level = Math.floor(xp / 100) + 1;
   const xpInLevel = xp % 100;
   const progressToNextLevel = (xpInLevel / 100) * 100;
-
-  const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
   // Dynamic Smart Insights Calculation
   const smartInsights = useMemo(() => {
@@ -271,15 +315,19 @@ export default function Dashboard({
   // Recharts Trends Cache
   const chartData = useMemo(() => {
     const last7Days = [];
+    const safeSteps = steps || {};
+    const safeData = data || {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-CA');
+      const daySteps = safeSteps[dateStr] || 0;
+      const dayWorkouts = safeData[dateStr] ? safeData[dateStr].length : 0;
       last7Days.push({
         name: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        steps: steps[dateStr] || 0,
-        workouts: data[dateStr] ? data[dateStr].length : 0,
-        calories: Math.round((steps[dateStr] || 0) * 0.04 + (data[dateStr] ? data[dateStr].length * 15 * 5 : 0)),
+        steps: daySteps,
+        workouts: dayWorkouts,
+        calories: Math.round(daySteps * 0.04 + dayWorkouts * 15 * 5),
       });
     }
     return last7Days;
@@ -831,6 +879,112 @@ export default function Dashboard({
       {/* Motivation Header */}
       <DailyMotivation workoutType={currentWorkoutType as any} />
 
+      {/* 🚀 LEVELUP STRATEGIC HUD */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        {/* Sakthi Alavu Calculated Targets */}
+        <div className="glass-card p-5 border border-emerald-500/20 bg-gradient-to-br from-[#0c0c0c] to-[#040404] rounded-2xl relative overflow-hidden group shadow-sm lg:col-span-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-center justify-between mb-4 leading-none">
+            <h3 className="tab-heading flex items-center gap-2 text-emerald-400">
+              <Sparkles size={14} className="text-emerald-400 animate-pulse" />
+              Sakthi Alavu Target
+            </h3>
+            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15">Active</span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <span className="text-[9px] font-black uppercase text-[var(--muted)] tracking-widest leading-none">Daily Fuel Goal</span>
+              <div className="text-3xl font-display font-black text-white italic mt-1">
+                {Math.round((profile.weight || 75) * 2.2 * sakthiMultiplier)} <span className="text-xs font-mono font-black text-emerald-400">KCAL</span>
+              </div>
+              <p className="text-[9px] font-semibold text-[var(--muted)] mt-1 uppercase">
+                Weight ({profile.weight || 75}kg) × 2.2 × Factor ({sakthiMultiplier})
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/[0.03] text-center">
+              <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5">
+                <div className="text-[8px] font-black uppercase text-[var(--muted)]">Protein</div>
+                <div className="text-sm font-black text-red-400 mt-0.5">{Math.round((profile.weight || 75) * 2.2)}g</div>
+              </div>
+              <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5">
+                <div className="text-[8px] font-black uppercase text-[var(--muted)]">Carbs</div>
+                <div className="text-sm font-black text-blue-400 mt-0.5">
+                  {Math.round((Math.round((profile.weight || 75) * 2.2 * sakthiMultiplier) - (Math.round((profile.weight || 75) * 2.2) * 4) - (Math.round((profile.weight || 75) * 2.2 * sakthiMultiplier) * 0.22)) / 4)}g
+                </div>
+              </div>
+              <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5">
+                <div className="text-[8px] font-black uppercase text-[var(--muted)]">Fats</div>
+                <div className="text-sm font-black text-amber-400 mt-0.5">{Math.round((Math.round((profile.weight || 75) * 2.2 * sakthiMultiplier) * 0.22) / 9)}g</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 10 Success Habits Quick-Track Bento Card */}
+        <div className="glass-card p-5 border border-purple-500/20 bg-gradient-to-br from-[#0c0c0c] to-[#040404] rounded-2xl relative overflow-hidden group shadow-sm lg:col-span-2 flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div>
+            <div className="flex items-center justify-between mb-3 leading-none">
+              <h3 className="tab-heading flex items-center gap-2 text-purple-400">
+                <Award size={14} className="text-purple-400" />
+                10 Daily Success Habits
+              </h3>
+              <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/15">
+                {Object.values(habitsChecked).filter(Boolean).length} / 10 Done
+              </span>
+            </div>
+
+            {/* Quick check bubbles row */}
+            <div className="grid grid-cols-5 gap-2 my-2.5">
+              {[
+                { id: 'h1', emoji: '🧘', label: 'Fasting' },
+                { id: 'h2', emoji: '👕', label: 'Outfit' },
+                { id: 'h3', emoji: '🌬️', label: 'Breath' },
+                { id: 'h4', emoji: '💧', label: 'Water' },
+                { id: 'h5', emoji: '😴', label: 'Sleep' },
+                { id: 'h6', emoji: '🎒', label: 'Bag' },
+                { id: 'h7', emoji: '⚖️', label: 'Scale' },
+                { id: 'h8', emoji: '🍳', label: 'Weigh' },
+                { id: 'h9', emoji: '🏋️', label: 'Lift' },
+                { id: 'h10', emoji: '🚶', label: 'Walk' },
+              ].map((hab) => {
+                const isDone = habitsChecked[hab.id] || false;
+                return (
+                  <button
+                    key={hab.id}
+                    onClick={() => toggleHabit(hab.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer relative group",
+                      isDone 
+                        ? "bg-purple-500/15 border-purple-500/40 text-white shadow-md shadow-purple-950/20" 
+                        : "bg-white/[0.02] border-white/5 text-[var(--muted)] hover:border-purple-500/20 hover:bg-white/[0.04]"
+                    )}
+                    title={hab.label}
+                  >
+                    <span className="text-base select-none">{hab.emoji}</span>
+                    <span className="text-[7px] font-black uppercase tracking-wider mt-1 truncate max-w-full leading-none">{hab.label}</span>
+                    {isDone && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 text-black rounded-full flex items-center justify-center text-[7px] font-black font-sans shadow-md">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <p className="text-[9px] text-[var(--muted)] uppercase font-[800] tracking-wider leading-none mt-2 pt-2 border-t border-white/[0.03]">
+            * Each completed habit awards +10 XP instantly. Complete all 10 for a 100 XP Elite bonus!
+          </p>
+        </div>
+
+      </div>
+
       {/* Daily Missions */}
       <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl relative overflow-hidden group shadow-sm">
          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all pointer-events-none" />
@@ -1004,24 +1158,26 @@ export default function Dashboard({
              <div className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">Last 7 Days</div>
           </div>
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorCals" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                  itemStyle={{ color: 'var(--text)' }}
-                />
-                <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <ErrorBoundary>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorCals" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: 'var(--text)' }}
+                  />
+                  <Area type="monotone" dataKey="calories" stroke="var(--accent)" fillOpacity={1} fill="url(#colorCals)" strokeWidth={4} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ErrorBoundary>
           </div>
         </div>
 
@@ -1034,18 +1190,20 @@ export default function Dashboard({
              <div className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest">Step Statistics</div>
           </div>
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  cursor={{ fill: 'var(--sub)' }}
-                  contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}
-                />
-                <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ErrorBoundary>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    cursor={{ fill: 'var(--sub)' }}
+                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px' }}
+                  />
+                  <Bar dataKey="steps" fill="var(--blue)" radius={[8, 8, 0, 0]} barSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ErrorBoundary>
           </div>
         </div>
       </div>

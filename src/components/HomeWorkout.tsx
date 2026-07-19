@@ -14,7 +14,7 @@ import {
   X,
   Trophy
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Level = 'beginner' | 'intermediate' | 'advanced';
 type Gender = 'male' | 'female';
