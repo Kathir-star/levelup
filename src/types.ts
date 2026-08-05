@@ -34,6 +34,8 @@ export interface WorkoutEntry {
   notes?: string;
   time: string;
   date: string;
+  workout_date?: string;
+  logged_late?: boolean;
   timestamp?: any;
   isPR?: boolean;
 }

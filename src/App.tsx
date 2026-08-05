@@ -33,7 +33,8 @@ import {
   Info,
   Brain,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WorkoutLog from './components/WorkoutLog';
@@ -53,6 +54,17 @@ import ExerciseAnimations from './components/ExerciseAnimations';
 import Logo from './components/common/Logo';
 import NotificationSettings from './components/NotificationSettings';
 import SelfMastery from './components/SelfMastery';
+import StreakBadge from './components/StreakBadge';
+import FitnessChallenges from './components/FitnessChallenges';
+import {
+  UserChallenge,
+  getInitialUserChallenges,
+  fetchUserChallengesFromSupabase,
+  getTodaySugarLog,
+  evaluateAndUpdateChallenges
+} from './lib/challenges';
+import { calculate7DayMuscleFrequency } from './lib/supabase';
+
 
 
 function SplashScreen() {
@@ -153,7 +165,7 @@ export default function App() {
   const [showCompletion, setShowCompletion] = useState<{ duration: number; muscle: MuscleGroup; exercise: string } | null>(null);
   const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
   const [animationsCategory, setAnimationsCategory] = useState<'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO'>('ALL');
-  const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
+  const [logsSubTab, setLogsSubTab] = useState<'training' | 'heatmap' | 'challenges' | 'bmi'>('training');
   const [showAICoachModal, setShowAICoachModal] = useState(false);
   const [fabHovered, setFabHovered] = useState(false);
   const [jarvisEnabled, setJarvisEnabled] = useState<boolean>(() => {
@@ -407,6 +419,11 @@ export default function App() {
   const [prs, setPrs] = useState<Record<string, PR>>({});
   const [sleep, setSleep] = useState<Record<string, SleepEntry>>({});
   
+  // Fitness Challenges & Milestones State
+  const [userChallenges, setUserChallenges] = useState<UserChallenge[]>(() => getInitialUserChallenges());
+  const [sugarConsumedToday, setSugarConsumedToday] = useState<boolean | null>(() => getTodaySugarLog(today));
+  const [latestPRLogged, setLatestPRLogged] = useState<boolean>(false);
+
   // Gamification State
   const [xp, setXp] = useState<number>(0);
   const [missions, setMissions] = useState<DailyMission[]>([]);
@@ -640,6 +657,55 @@ export default function App() {
     }
   }, [userProfile.name, tamilMode]);
 
+  // Fetch user challenges from Supabase on profile load
+  useEffect(() => {
+    fetchUserChallengesFromSupabase(userProfile.name || 'local_user').then((data) => {
+      if (data && data.length > 0) {
+        setUserChallenges(data);
+      }
+    });
+  }, [userProfile.name]);
+
+  // Evaluate & sync challenge progress across daily inputs
+  useEffect(() => {
+    if (!userChallenges || userChallenges.length === 0) return;
+    const result = evaluateAndUpdateChallenges({
+      userChallenges,
+      today,
+      workoutData,
+      stepsToday: steps[today] || 0,
+      waterToday: water[today] || 0,
+      sugarConsumedToday,
+      isPRLoggedToday: latestPRLogged,
+      waterGoal: 3000
+    });
+
+    if (result.hasChanges) {
+      setUserChallenges(result.updatedChallenges);
+      if (result.completedChallengeName) {
+        addToast(`🏆 Challenge Mastered: ${result.completedChallengeName}! (+250 XP)`, "success");
+        setXp(prev => prev + 250);
+      }
+    }
+  }, [workoutData, steps, water, sugarConsumedToday, latestPRLogged, today]);
+
+  const handleSyncChallenges = useCallback(async () => {
+    const fresh = await fetchUserChallengesFromSupabase(userProfile.name || 'local_user');
+    const result = evaluateAndUpdateChallenges({
+      userChallenges: fresh,
+      today,
+      workoutData,
+      stepsToday: steps[today] || 0,
+      waterToday: water[today] || 0,
+      sugarConsumedToday,
+      isPRLoggedToday: latestPRLogged,
+      waterGoal: 3000
+    });
+    setUserChallenges(result.updatedChallenges);
+    addToast("🔄 Challenge progress resynced with latest metrics.", "info");
+  }, [userProfile.name, today, workoutData, steps, water, sugarConsumedToday, latestPRLogged, addToast]);
+
+
   // Local notification reminder background scheduler
   useEffect(() => {
     const checkAndTriggerReminders = () => {
@@ -796,6 +862,7 @@ export default function App() {
 
     // Update PRs if needed
     if (isNewPR && entry.weight > 0) {
+      setLatestPRLogged(true);
       setPrs(prev => ({
         ...prev,
         [prKey]: { weight: entry.weight, reps: entry.reps, date: today }
@@ -1123,15 +1190,12 @@ export default function App() {
               </div>
             </div>
             {streak > 0 && (
-              <div className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shadow-lg animate-in zoom-in duration-500 hidden sm:flex", (workoutData[today] && workoutData[today].length > 0) ? "bg-[var(--red)]/10 border-[var(--red)]/20" : "bg-[var(--yellow)]/10 border-[var(--yellow)]/30")}>
-                  <Flame size={14} className={cn((workoutData[today] && workoutData[today].length > 0) ? "text-[var(--red)]" : "text-[var(--yellow)]", streak >= 4 ? "animate-pulse" : "", streak >= 8 ? "animate-bounce" : "")} />
-                  <div className="flex flex-col">
-                    <span className={cn("text-[9px] font-black uppercase tracking-widest leading-none", (workoutData[today] && workoutData[today].length > 0) ? "text-white" : "text-[var(--yellow)]")}>{streak} Day Streak</span>
-                    {(!workoutData[today] || workoutData[today].length === 0) && (
-                       <span className="text-[8px] font-bold text-[var(--yellow)] uppercase tracking-wider mt-0.5">⚠️ At Risk!</span>
-                    )}
-                  </div>
-              </div>
+              <StreakBadge
+                streak={streak}
+                isPR={latestPRLogged}
+                hasTrainedToday={!!(workoutData[today] && workoutData[today].length > 0)}
+                className="hidden sm:inline-flex"
+              />
             )}
             <div className="flex items-center gap-1">
               <button 
@@ -1297,11 +1361,11 @@ export default function App() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Top Switched Segmented Control for Logs */}
             <div className="flex justify-center">
-              <div className="bg-[var(--card2)] p-1.5 rounded-2xl border border-[var(--border)] flex gap-1.5 w-full max-w-sm shadow-xl">
+              <div className="bg-[var(--card2)] p-1.5 rounded-2xl border border-[var(--border)] flex gap-1.5 w-full max-w-lg shadow-xl overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => setLogsSubTab('training')}
                   className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer select-none",
+                    "flex-1 py-3 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer select-none whitespace-nowrap",
                     logsSubTab === 'training'
                       ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
                       : "text-[var(--muted)] hover:text-white hover:bg-white/5"
@@ -1311,16 +1375,40 @@ export default function App() {
                   Training Log
                 </button>
                 <button
+                  onClick={() => setLogsSubTab('heatmap')}
+                  className={cn(
+                    "flex-1 py-3 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer select-none whitespace-nowrap",
+                    logsSubTab === 'heatmap'
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
+                      : "text-[var(--muted)] hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Activity size={14} />
+                  Heatmap
+                </button>
+                <button
+                  onClick={() => setLogsSubTab('challenges')}
+                  className={cn(
+                    "flex-1 py-3 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer select-none whitespace-nowrap",
+                    logsSubTab === 'challenges'
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
+                      : "text-[var(--muted)] hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Award size={14} />
+                  Challenges
+                </button>
+                <button
                   onClick={() => setLogsSubTab('bmi')}
                   className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer select-none",
+                    "flex-1 py-3 px-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer select-none whitespace-nowrap",
                     logsSubTab === 'bmi'
                       ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] active-glow"
                       : "text-[var(--muted)] hover:text-white hover:bg-white/5"
                   )}
                 >
                   <Calculator size={14} />
-                  BMI Calculator
+                  BMI Calc
                 </button>
               </div>
             </div>
@@ -1335,6 +1423,22 @@ export default function App() {
                   onDeleteEntry={handleDeleteWorkout}
                   onEditEntry={handleEditWorkout}
                   fullHistory={workoutData}
+                />
+              )}
+              {logsSubTab === 'heatmap' && (
+                <MuscleVisualizer 
+                  onStartWorkout={(m, ex) => {
+                    setActiveWorkout({ muscle: m, exercise: ex });
+                  }}
+                  muscleData={calculate7DayMuscleFrequency(workoutData)}
+                />
+              )}
+              {logsSubTab === 'challenges' && (
+                <FitnessChallenges
+                  userChallenges={userChallenges}
+                  today={today}
+                  onSugarLogChange={(consumed) => setSugarConsumedToday(consumed)}
+                  onRefresh={handleSyncChallenges}
                 />
               )}
               {logsSubTab === 'bmi' && (
