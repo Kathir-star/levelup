@@ -22,5 +22,18 @@ export default defineConfig({
       host: 'ais-dev-abpyzgtehgloftmrbpss3v-708515236167.asia-east1.run.app',
       clientPort: 443
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-recharts': ['recharts'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-motion': ['framer-motion']
+        }
+      }
+    }
   }
 });

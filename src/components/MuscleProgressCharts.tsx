@@ -362,7 +362,7 @@ export default function MuscleProgressCharts({ data = {}, prs = {} }: MuscleProg
            <ResponsiveContainer width="100%" height="100%">
              <BarChart data={muscles.map(m => ({ name: m, weight: muscleStats[m]?.maxWeight || 0 }))} margin={{ left: -20 }}>
                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-               <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
+               <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} allowDuplicatedCategory={false} />
                <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
                <Tooltip 
                  cursor={{ fill: 'var(--sub)' }}
