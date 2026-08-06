@@ -1,25 +1,8 @@
+import './suppressWarnings';
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-
-// Suppress benign third-party defaultProps warnings from recharts/react 18
-const originalError = console.error;
-const originalWarn = console.warn;
-
-console.error = (...args: any[]) => {
-  if (args.some(arg => typeof arg === 'string' && arg.includes('defaultProps'))) {
-    return;
-  }
-  originalError(...args);
-};
-
-console.warn = (...args: any[]) => {
-  if (args.some(arg => typeof arg === 'string' && arg.includes('defaultProps'))) {
-    return;
-  }
-  originalWarn(...args);
-};
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -39,3 +22,4 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
