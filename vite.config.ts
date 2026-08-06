@@ -4,6 +4,7 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig({
+  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -24,6 +25,7 @@ export default defineConfig({
     }
   },
   build: {
+    outDir: 'dist',
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
