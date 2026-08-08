@@ -1,18 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { MuscleGroup, WorkoutEntry } from '../types';
 import { cn } from '../lib/utils';
-import { 
-  Plus, Search, Filter, MessageSquare, History, Activity, Trophy, 
-  CheckCircle2, RefreshCcw, Info, AlertTriangle, ShieldAlert, Trash2, 
-  Edit3, Check, X, Calendar, Database, Download, Flame, Zap, Clock, ShieldCheck 
-} from 'lucide-react';
+import { Plus, Search, Filter, MessageSquare, History, Activity, Trophy, CheckCircle2, RefreshCcw, Info, AlertTriangle, ShieldAlert, Trash2, Edit3, Check, X, Calendar, Database, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  insertWorkoutLogToSupabase, 
-  calculateMuscleRecovery, 
-  calculate7DayMuscleFrequency, 
-  generateWeeklyBalanceInsight 
-} from '../lib/supabase';
 
 interface WorkoutLogProps {
   onLog: (entry: WorkoutEntry) => void;
@@ -39,25 +29,10 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
   const [editSets, setEditSets] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
-  // Date filters for viewing history
+  // Date filters
   const [dateFilter, setDateFilter] = useState('');
 
-  // TASK 3: Date picker for backdated logging (Last 3 Days Only)
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const yesterdayStr = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
-  }, []);
-  const dayBeforeYesterdayStr = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 2);
-    return d.toISOString().slice(0, 10);
-  }, []);
-
-  const [selectedLogDate, setSelectedLogDate] = useState<string>(todayStr);
-
-  // Auto-save user entries (localStorage)
+  // 1. Auto-save user entries (localStorage)
   const [muscle, setMuscle] = useState<MuscleGroup>(() => 
     (localStorage.getItem('lv_draft_muscle') as MuscleGroup) || 'Chest'
   );
@@ -86,6 +61,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
   const [showProgressLockWarning, setShowProgressLockWarning] = useState(false);
   const [msg, setMsg] = useState('');
   const [logState, setLogState] = useState<'idle' | 'logging' | 'success'>('idle');
+  const [backupSuccess, setBackupSuccess] = useState(false);
 
   // Sync draft edits to localStorage
   useEffect(() => {
@@ -98,24 +74,19 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
     localStorage.setItem('lv_draft_selectedMood', selectedMood);
   }, [muscle, exerciseName, weight, reps, sets, notes, selectedMood]);
 
-  // TASK 4: Smart Recovery Indicators & Weekly Balance Insight
-  const recoveryMap = useMemo(() => calculateMuscleRecovery(history), [history]);
-  const frequencyMap = useMemo(() => calculate7DayMuscleFrequency(history), [history]);
-  const weeklyInsightText = useMemo(() => generateWeeklyBalanceInsight(frequencyMap), [frequencyMap]);
-
   const filteredHistory = useMemo(() => {
     return history.filter(n => {
       const matchesSearch = n.notes?.toLowerCase().includes(search.toLowerCase()) || 
         n.muscle.toLowerCase().includes(search.toLowerCase()) ||
         n.exerciseName?.toLowerCase().includes(search.toLowerCase());
-      const matchesDate = !dateFilter || (n.workout_date || n.date) === dateFilter;
+      const matchesDate = !dateFilter || n.date === dateFilter;
       return matchesSearch && matchesDate;
     }).slice(0, 15);
   }, [history, search, dateFilter]);
 
-  // Compute consecutive days of training from history (Streak tracking)
+  // Compute consecutive days of training from history
   const consecutiveDays = useMemo(() => {
-    const dates = Array.from(new Set(history.map(h => h.workout_date || h.date))).sort();
+    const dates = Array.from(new Set(history.map(h => h.date))).sort();
     if (dates.length === 0) return 0;
 
     let consecutive = 1;
@@ -135,16 +106,6 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
     return consecutive;
   }, [history]);
 
-  // TASK 3: Duplicate Entry Detection
-  const duplicateEntry = useMemo(() => {
-    const targetName = (exerciseName || muscle).toLowerCase().trim();
-    return history.find(h => {
-      const hDate = h.workout_date || h.date;
-      const hName = (h.exerciseName || h.muscle).toLowerCase().trim();
-      return hDate === selectedLogDate && hName === targetName;
-    });
-  }, [history, selectedLogDate, exerciseName, muscle]);
-
   // Progress Lock Analysis: is weight more than 50% higher than the current PR?
   const prKey = useMemo(() => {
     const key = exerciseName ? exerciseName.toLowerCase().trim() : muscle.toLowerCase();
@@ -159,6 +120,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
     return wNum > existingPR.weight * 1.5;
   }, [existingPR, weight]);
 
+  // Trigger effect when progress spike is detected
   useEffect(() => {
     if (isProgressSpike) {
       setShowProgressLockWarning(true);
@@ -167,32 +129,6 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
       setOverrideProgressLock(false);
     }
   }, [isProgressSpike]);
-
-  // TASK 4: Quick Log Mode handlers
-  const handleQuickLog = (preset: 'Push' | 'Pull' | 'Legs') => {
-    if (preset === 'Push') {
-      setMuscle('Chest');
-      setExerciseName('Bench Press');
-      setSets('4');
-      setReps('10');
-      setWeight('60');
-      setNotes('⚡ Quick Push preset loaded');
-    } else if (preset === 'Pull') {
-      setMuscle('Back');
-      setExerciseName('Lat Pulldown');
-      setSets('4');
-      setReps('10');
-      setWeight('50');
-      setNotes('⚡ Quick Pull preset loaded');
-    } else if (preset === 'Legs') {
-      setMuscle('Quadriceps');
-      setExerciseName('Barbell Squats');
-      setSets('4');
-      setReps('10');
-      setWeight('70');
-      setNotes('⚡ Quick Legs preset loaded');
-    }
-  };
 
   const handleSave = async () => {
     setValidationError('');
@@ -210,6 +146,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
     const rNum = Number(reps) || 0;
     const sNum = Number(sets) || 0;
 
+    // Hard Boundaries Validation (Safe Limit System)
     if (wNum < 0 || rNum < 0 || sNum < 0) {
       setValidationError('⚠️ Inputs cannot be negative.');
       return;
@@ -227,16 +164,15 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
       return;
     }
 
+    // Progress Lock Check
     if (isProgressSpike && !overrideProgressLock) {
-      setValidationError('⚠️ PROGRESS LOCK ACTIVE: Logged weight is 50%+ higher than your historical PR.');
+      setValidationError('⚠️ PROGRESS LOCK ACTIVE: Logged weight is 50%+ higher than your historical PR. progression spikes of this size present extreme injury risks. Check the override block to confirm.');
       return;
     }
 
     setLogState('logging');
 
     const moodEmoji = MOODS.find(m => m.id === selectedMood)?.emoji || '💪';
-    const isBackdated = selectedLogDate !== todayStr;
-
     const entry: WorkoutEntry = {
       muscle,
       exerciseName: exerciseName.trim(),
@@ -245,20 +181,17 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
       sets: sNum,
       notes: `${moodEmoji} ${notes.trim()}`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: selectedLogDate,
-      workout_date: selectedLogDate,
-      logged_late: isBackdated
+      date: new Date().toISOString().slice(0, 10)
     };
 
-    // Sync to Supabase in background
-    insertWorkoutLogToSupabase(entry);
-
-    await new Promise(resolve => setTimeout(resolve, 600));
+    // Simulate logging delay for premium feel
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     onLog(entry);
     
     setLogState('success');
     
+    // Clear form and drafts
     setExerciseName('');
     setWeight('');
     setReps('');
@@ -275,12 +208,10 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
     
     setTimeout(() => {
       setLogState('idle');
-      setMsg(isBackdated ? 'Backdated Workout Saved ✔' : 'Workout Saved ✔');
+      setMsg('Saved ✔');
       setTimeout(() => setMsg(''), 3000);
-    }, 1200);
+    }, 1500);
   };
-
-  const selectedMuscleRecovery = recoveryMap[muscle] || { status: 'green', label: 'Ready to train' };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
@@ -305,7 +236,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                     transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                     className="w-16 h-16 border-4 border-[var(--accent)] border-t-transparent rounded-full shadow-[0_0_20px_var(--accent-glow)]"
                   />
-                  <div className="text-xl font-black uppercase tracking-widest text-white">Logging Session...</div>
+                  <div className="text-xl font-black uppercase tracking-widest text-white">Logging Set...</div>
                 </>
               ) : (
                 <>
@@ -318,8 +249,8 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                     <CheckCircle2 size={48} />
                   </motion.div>
                   <div className="flex flex-col items-center gap-1">
-                    <div className="text-2xl font-black uppercase tracking-widest text-white">Exercise Saved!</div>
-                    <div className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.3em]">Great intensity today</div>
+                    <div className="text-2xl font-black uppercase tracking-widest text-white">Exercise Complete!</div>
+                    <div className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.3em]">Great work out there</div>
                   </div>
                 </>
               )}
@@ -328,142 +259,26 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
         )}
       </AnimatePresence>
 
-      {/* TASK 4: Weekly Balance Insight & Streak Header */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-card p-5 border border-[var(--border)] md:col-span-2 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center text-[var(--accent)] shrink-0">
-            <Zap size={20} />
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">Weekly Balance Insight</div>
-            <p className="text-xs text-white/90 font-medium mt-0.5 leading-relaxed">{weeklyInsightText}</p>
-          </div>
-        </div>
-
-        <div className="glass-card p-5 border border-[var(--border)] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-500">
-              <Flame size={20} />
-            </div>
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Workout Streak</div>
-              <div className="text-lg font-black text-white">{consecutiveDays} Days Active</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="glass-card p-8">
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[var(--accent)]/20 rounded-2xl flex items-center justify-center text-[var(--accent)]">
-                <Plus size={24} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black uppercase tracking-tight">Log Session</h2>
-                <p className="text-xs text-[var(--muted)] font-bold uppercase tracking-widest">Track your sets with precision</p>
-              </div>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-[var(--red)]/20 rounded-2xl flex items-center justify-center text-[var(--red)]">
+              <Plus size={24} />
             </div>
-
-            {/* TASK 4: Quick Log Preset Mode */}
-            <div className="flex items-center gap-1.5 bg-[var(--sub)] p-1.5 rounded-2xl border border-[var(--border)]">
-              <span className="text-[9px] font-black uppercase text-[var(--muted)] px-1">Quick:</span>
-              <button 
-                onClick={() => handleQuickLog('Push')}
-                className="px-2.5 py-1 bg-[var(--card)] hover:bg-[var(--accent)] hover:text-white rounded-xl text-[10px] font-black uppercase text-white transition-all cursor-pointer border border-[var(--border)]"
-              >
-                Push
-              </button>
-              <button 
-                onClick={() => handleQuickLog('Pull')}
-                className="px-2.5 py-1 bg-[var(--card)] hover:bg-[var(--accent)] hover:text-white rounded-xl text-[10px] font-black uppercase text-white transition-all cursor-pointer border border-[var(--border)]"
-              >
-                Pull
-              </button>
-              <button 
-                onClick={() => handleQuickLog('Legs')}
-                className="px-2.5 py-1 bg-[var(--card)] hover:bg-[var(--accent)] hover:text-white rounded-xl text-[10px] font-black uppercase text-white transition-all cursor-pointer border border-[var(--border)]"
-              >
-                Legs
-              </button>
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-tight">Log Session</h2>
+              <p className="text-xs text-[var(--muted)] font-bold uppercase tracking-widest">Track your heavy hits</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            
-            {/* TASK 3: Backdated Workout Date Selector (Last 3 Days Only) */}
-            <div className="space-y-2 p-4 bg-[var(--sub)]/60 border border-[var(--border)] rounded-2xl">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] flex items-center gap-1.5">
-                  <Calendar size={14} /> Log Date (Last 3 Days)
-                </label>
-                {selectedLogDate !== todayStr && (
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full flex items-center gap-1">
-                    <Clock size={10} /> Backdated Mode (Logged Late = True)
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedLogDate(todayStr)}
-                  className={cn(
-                    "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer",
-                    selectedLogDate === todayStr 
-                      ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-glow)]" 
-                      : "bg-[var(--card)] text-[var(--muted)] border-[var(--border)] hover:text-white"
-                  )}
-                >
-                  Today ({todayStr.slice(8)})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedLogDate(yesterdayStr)}
-                  className={cn(
-                    "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer",
-                    selectedLogDate === yesterdayStr 
-                      ? "bg-yellow-500 text-black font-black border-yellow-500 shadow-md shadow-yellow-500/20" 
-                      : "bg-[var(--card)] text-[var(--muted)] border-[var(--border)] hover:text-white"
-                  )}
-                >
-                  Yesterday ({yesterdayStr.slice(8)})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedLogDate(dayBeforeYesterdayStr)}
-                  className={cn(
-                    "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer",
-                    selectedLogDate === dayBeforeYesterdayStr 
-                      ? "bg-amber-600 text-white font-black border-amber-600 shadow-md shadow-amber-600/20" 
-                      : "bg-[var(--card)] text-[var(--muted)] border-[var(--border)] hover:text-white"
-                  )}
-                >
-                  2 Days Ago ({dayBeforeYesterdayStr.slice(8)})
-                </button>
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="tab-heading">Muscle Group</label>
-                  
-                  {/* TASK 4: Muscle Recovery Badge */}
-                  <span className={cn(
-                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
-                    selectedMuscleRecovery.status === 'red' ? "bg-red-500/20 text-red-400 border-red-500/30" :
-                    selectedMuscleRecovery.status === 'yellow' ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
-                    "bg-green-500/20 text-green-400 border-green-500/30"
-                  )}>
-                    {selectedMuscleRecovery.status === 'red' ? 'Rest Needed' :
-                     selectedMuscleRecovery.status === 'yellow' ? 'Recovering' : 'Ready'}
-                  </span>
-                </div>
+                <label className="tab-heading">Muscle Group</label>
                 <select 
                   value={muscle} 
                   onChange={(e) => setMuscle(e.target.value as MuscleGroup)}
-                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-bold"
+                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none font-bold"
                 >
                   <option>Chest</option>
                   <option>Back</option>
@@ -472,9 +287,6 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                   <option>Triceps</option>
                   <option>Shoulder</option>
                   <option>Abs</option>
-                  <option>Quadriceps</option>
-                  <option>Hamstrings</option>
-                  <option>Glutes</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -483,10 +295,9 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                   {MOODS.map(m => (
                     <button
                       key={m.id}
-                      type="button"
                       onClick={() => setSelectedMood(m.id)}
                       className={cn(
-                        "flex-1 py-3 rounded-2xl border text-lg transition-all cursor-pointer",
+                        "flex-1 py-3 rounded-2xl border text-lg transition-all",
                         selectedMood === m.id ? "bg-[var(--accent)] border-[var(--accent)] shadow-lg shadow-[var(--accent-glow)]" : "bg-[var(--sub)] border-[var(--border)] opacity-50"
                       )}
                       title={m.label}
@@ -505,17 +316,9 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                 value={exerciseName} 
                 onChange={(e) => setExerciseName(e.target.value)}
                 placeholder="e.g. Bench Press" 
-                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-bold"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none font-bold"
               />
             </div>
-
-            {/* TASK 3: Duplicate Warning if existing entry for same date & exercise */}
-            {duplicateEntry && (
-              <div className="p-3 bg-blue-500/15 border border-blue-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-blue-300 font-bold">
-                <Info size={16} className="shrink-0 text-blue-400" />
-                An entry for "{duplicateEntry.exerciseName || duplicateEntry.muscle}" already exists on {selectedLogDate}. Saving will add to your workout session log.
-              </div>
-            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -525,7 +328,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                   value={weight} 
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="0" 
-                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none font-black text-xl text-center"
                 />
               </div>
               <div className="space-y-2">
@@ -535,7 +338,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                   value={reps} 
                   onChange={(e) => setReps(e.target.value)}
                   placeholder="0" 
-                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none font-black text-xl text-center"
                 />
               </div>
               <div className="space-y-2">
@@ -545,7 +348,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                   value={sets} 
                   onChange={(e) => setSets(e.target.value)}
                   placeholder="0" 
-                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                  className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none font-black text-xl text-center"
                 />
               </div>
             </div>
@@ -555,20 +358,44 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
               <textarea 
                 value={notes} 
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="How did the set feel?..." 
-                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none min-h-[90px] resize-none italic text-sm"
+                placeholder="How did the pump feel?..." 
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--red)] transition-all outline-none min-h-[100px] resize-none italic text-sm"
               />
             </div>
 
             {/* Safety Alerts Panel */}
             <div className="space-y-3 mt-4">
-              {consecutiveDays >= 4 && (
+              {consecutiveDays >= 3 && (
                 <div className="p-4 bg-yellow-500/15 border-l-4 border-yellow-500 rounded-r-xl flex items-start gap-2.5">
                   <AlertTriangle size={16} className="text-yellow-500 shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">Rest Recommended</div>
+                    <div className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">Rest Day Recommended</div>
                     <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                      You have trained for <strong>{consecutiveDays} consecutive days</strong>. Rest days promote muscle protein synthesis.
+                      You have trained for <strong>{consecutiveDays} consecutive days</strong>. Rest days are required for protein synthesis and central nervous system recovery. Take a break!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {todayEntries.length >= 8 && (
+                <div className="p-4 bg-orange-500/15 border-l-4 border-orange-500 rounded-r-xl flex items-start gap-2.5">
+                  <AlertTriangle size={16} className="text-orange-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-orange-400 tracking-wider">Overtraining Alert</div>
+                    <p className="text-xs text-white/80 mt-1 leading-relaxed">
+                      You've already logged <strong>{todayEntries.length} exercises today</strong>. Your cortisol levels are rising. Consider wrapping up!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(Number(weight) > 120 || (Number(weight) * (Number(reps) || 0) * (Number(sets) || 0)) > 2000) && (
+                <div className="p-4 bg-[var(--red)]/10 border-l-4 border-[var(--red)] rounded-r-xl flex items-start gap-2.5 animate-pulse">
+                  <ShieldAlert size={16} className="text-[var(--red)] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-[var(--red)] tracking-wider">High Intensity Mechanical Load</div>
+                    <p className="text-xs text-white/80 mt-1 leading-relaxed">
+                      Elite level intensity/volume detected. Secure perfect range-of-motion, inspect weight collars, request a gym spotter, and defend your core/spine.
                     </p>
                   </div>
                 </div>
@@ -581,7 +408,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                     <div>
                       <div className="text-xs font-black uppercase text-red-400 tracking-wider">🚨 Safe Limit Progress Lock</div>
                       <p className="text-xs text-white/95 mt-1 leading-relaxed">
-                        The requested weight <strong>{weight}kg</strong> is 50%+ higher than your previous PR of <strong>{existingPR?.weight}kg</strong>.
+                        The requested weight <strong>{weight}kg</strong> is 50%+ higher than your previous PR of <strong>{existingPR?.weight}kg</strong>. Progression surges of this velocity are highly correlated with chest tears, joint damage, or tendonitis.
                       </p>
                     </div>
                   </div>
@@ -611,7 +438,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
               onClick={handleSave}
               disabled={logState !== 'idle'}
               className={cn(
-                "w-full bg-[var(--accent)] text-white font-black py-5 rounded-2xl shadow-xl shadow-[var(--accent-glow)] transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-2 mt-4 cursor-pointer",
+                "w-full bg-[var(--red)] text-white font-black py-5 rounded-2xl shadow-xl shadow-[var(--red)]/20 transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-2 mt-4",
                 logState === 'idle' ? "hover:scale-[1.02] active:scale-[0.98]" : "opacity-50 cursor-not-allowed scale-[0.98]"
               )}
             >
@@ -622,7 +449,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
               ) : (
                 <Activity size={18} />
               )}
-              {logState === 'logging' ? 'Processing...' : (selectedLogDate !== todayStr ? 'Save Backdated Workout' : 'Save Workout')}
+              {logState === 'logging' ? 'Processing...' : 'Save Workout'}
             </button>
             {msg && <div className="text-center text-[var(--green)] font-black text-xs uppercase tracking-widest animate-bounce">{msg}</div>}
           </div>
@@ -632,8 +459,8 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
           <div className="glass-card p-8">
             <div className="flex items-center justify-between mb-8">
               <h3 className="tab-heading flex items-center gap-2">
-                <History size={16} className="text-[var(--accent)]" />
-                Latest Lifts Logged
+                <History size={16} className="text-[var(--red)]" />
+                Latest Lifts
               </h3>
             </div>
             
@@ -651,7 +478,7 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: i * 0.05 }}
-                        className="p-5 rounded-3xl border border-[var(--border)] bg-[var(--sub)]/50 group relative overflow-hidden transition-all hover:border-[var(--accent)]"
+                        className="p-5 rounded-3xl border border-[var(--border)] bg-[var(--sub)]/50 group relative overflow-hidden transition-all hover:border-[var(--red)]"
                       >
                         {isEditing ? (
                           <div className="space-y-4 relative z-10 transition-all">
@@ -684,77 +511,96 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
                                 />
                               </div>
                             </div>
-                            <div className="flex gap-2 justify-end pt-2">
+                            <div>
+                              <label className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Coach Notes (optional)</label>
+                              <input 
+                                value={editNotes}
+                                onChange={(ev) => setEditNotes(ev.target.value)}
+                                className="w-full bg-[var(--card2)] border border-[var(--border)] rounded-xl py-2 px-3 text-xs text-white"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-1 border-t border-[var(--border)]">
                               <button 
                                 onClick={() => setEditingIndex(null)}
-                                className="px-3 py-1.5 rounded-xl bg-[var(--sub)] border border-[var(--border)] text-xs text-[var(--muted)] font-bold cursor-pointer"
+                                className="px-3 py-1.5 rounded-lg bg-white/5 text-[9px] font-black uppercase text-[var(--muted)] flex items-center gap-1 hover:text-white"
                               >
-                                Cancel
+                                <X size={10} /> Cancel
                               </button>
                               <button 
                                 onClick={() => {
                                   if (onEditEntry) {
-                                    onEditEntry(e.date || todayStr, i, {
+                                    onEditEntry(new Date().toLocaleDateString('en-CA'), i, {
                                       ...e,
                                       exerciseName: editName,
-                                      weight: Number(editWeight) || e.weight,
-                                      reps: Number(editReps) || e.reps
+                                      weight: Number(editWeight) || 0,
+                                      reps: Number(editReps) || 0,
+                                      notes: editNotes
                                     });
                                   }
                                   setEditingIndex(null);
                                 }}
-                                className="px-3 py-1.5 rounded-xl bg-[var(--accent)] text-white text-xs font-bold cursor-pointer"
+                                className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white font-[800] text-[9px] uppercase tracking-widest flex items-center gap-1"
                               >
-                                Save Changes
+                                <Check size={10} /> Save
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-black text-white text-base">{e.exerciseName || e.muscle}</span>
-                                {e.logged_late && (
-                                  <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
-                                    Logged Late
-                                  </span>
-                                )}
+                          <>
+                            {/* Standard View */}
+                            <div className="flex items-center justify-between relative z-10">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[var(--red)]/10 flex items-center justify-center text-[var(--red)] font-black text-sm shrink-0">
+                                  {e.muscle[0]}
+                                </div>
+                                <div className="leading-snug">
+                                  <div className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                                    {e.exerciseName || e.muscle}
+                                    {e.isPR && (
+                                      <span className="bg-[var(--yellow)]/20 text-[var(--yellow)] text-[8px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-1">
+                                        <Trophy size={8}/> PR
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-widest">
+                                    {e.exerciseName ? `${e.muscle} • ` : ''}{e.time}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-[var(--muted)] font-bold mt-1 flex items-center gap-2">
-                                <span>{e.weight}kg × {e.reps} reps ({e.sets || 1} sets)</span>
-                                <span>•</span>
-                                <span className="text-[var(--accent)]">{e.muscle}</span>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="text-xl font-black text-[var(--yellow)]">{e.weight}<span className="text-[10px] ml-0.5">KG</span></div>
+                                  <div className="text-[10px] text-[var(--muted)] font-black uppercase tracking-widest">{e.reps} Reps • {e.sets} Sets</div>
+                                </div>
+                                <div className="flex flex-col gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => {
+                                      setEditingIndex(i);
+                                      setEditName(e.exerciseName || '');
+                                      setEditWeight(String(e.weight));
+                                      setEditReps(String(e.reps));
+                                      setEditSets(String(e.sets || 1));
+                                      setEditNotes(e.notes || '');
+                                    }}
+                                    className="p-1 px-1.5 bg-white/5 border border-white/10 hover:border-[var(--accent)] rounded text-[var(--muted)] hover:text-[var(--accent)] transition-all cursor-pointer"
+                                    title="Edit Log"
+                                  >
+                                    <Edit3 size={10} />
+                                  </button>
+                                  {onDeleteEntry && (
+                                    <button
+                                      onClick={() => onDeleteEntry(new Date().toLocaleDateString('en-CA'), i)}
+                                      className="p-1 px-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white rounded text-red-400 transition-all cursor-pointer"
+                                      title="Delete Log"
+                                    >
+                                      <Trash2 size={10} />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              {e.notes && <p className="text-xs text-[var(--muted)] italic mt-2">{e.notes}</p>}
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              {onEditEntry && (
-                                <button 
-                                  onClick={() => {
-                                    setEditingIndex(i);
-                                    setEditName(e.exerciseName || e.muscle);
-                                    setEditWeight(String(e.weight));
-                                    setEditReps(String(e.reps));
-                                    setEditSets(String(e.sets || 1));
-                                  }}
-                                  className="p-2 rounded-xl bg-[var(--sub)] hover:bg-[var(--accent)] hover:text-white transition-all text-[var(--muted)] cursor-pointer"
-                                  title="Edit entry"
-                                >
-                                  <Edit3 size={14} />
-                                </button>
-                              )}
-                              {onDeleteEntry && (
-                                <button 
-                                  onClick={() => onDeleteEntry(e.date || todayStr, i)}
-                                  className="p-2 rounded-xl bg-[var(--sub)] hover:bg-red-500 hover:text-white transition-all text-[var(--muted)] cursor-pointer"
-                                  title="Delete entry"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                            {e.notes && <div className="mt-4 text-xs text-white/80 leading-relaxed italic border-t border-[var(--border)] pt-4">"{e.notes}"</div>}
+                          </>
                         )}
                       </motion.div>
                     );
@@ -763,6 +609,182 @@ export default function WorkoutLog({ onLog, todayEntries, history, prs, onDelete
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="tab-heading text-lg">📝 Notes History</h2>
+          <div className="flex items-center gap-2">
+            {/* Date Picker Filter */}
+            <div className="relative flex items-center">
+              <Calendar className="absolute left-3 text-[var(--muted)] pointer-events-none" size={14} />
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(ev) => setDateFilter(ev.target.value)}
+                className="bg-[var(--sub)] border border-[var(--border)] rounded-xl py-2 pl-9 pr-4 text-xs focus:border-[var(--red)] outline-none text-white max-w-[140px]"
+                title="Filter by Date"
+              />
+              {dateFilter && (
+                <button 
+                  onClick={() => setDateFilter('')}
+                  className="absolute right-2 text-[var(--muted)] hover:text-white text-xs font-bold"
+                  title="Clear Date"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Keyword Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" size={14} />
+              <input 
+                type="text" 
+                placeholder="Search history..." 
+                value={search}
+                onChange={(ev) => setSearch(ev.target.value)}
+                className="bg-[var(--sub)] border border-[var(--border)] rounded-xl py-2 pl-9 pr-4 text-xs focus:border-[var(--red)] outline-none w-full sm:min-w-[160px]"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredHistory.length === 0 ? (
+            <div className="col-span-full text-[var(--muted)] text-sm italic text-center py-8">No matching notes found.</div>
+          ) : (
+            filteredHistory.map((n, i) => {
+              const handleHistoricalDelete = () => {
+                if (!onDeleteEntry || !fullHistory) return;
+                const dayLogs = fullHistory[n.date] || [];
+                const matchIdx = dayLogs.findIndex(x => x.time === n.time && (x.exerciseName === n.exerciseName || x.muscle === n.muscle) && x.weight === n.weight);
+                if (matchIdx !== -1) {
+                  onDeleteEntry(n.date, matchIdx);
+                }
+              };
+
+              return (
+                <div key={i} className="glass-card p-6 border-l-4 border-[var(--accent)] relative group">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest">{n.date} · {n.time}</div>
+                    <div className="flex items-center gap-2">
+                      {onDeleteEntry && fullHistory && (
+                        <button
+                          onClick={handleHistoricalDelete}
+                          className="p-1 text-[var(--muted)] hover:text-red-400 rounded transition-colors cursor-pointer"
+                          title="Delete entry"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                      {n.isPR && (
+                        <span className="px-2 py-0.5 bg-[var(--yellow)]/10 text-[var(--yellow)] rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                          <Trophy size={8}/> PR
+                        </span>
+                      )}
+                      <div className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[8px] font-black uppercase tracking-widest">{n.exerciseName || n.muscle}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs font-black mb-2">{n.weight}kg × {n.reps} reps</div>
+                  <div className="text-xs text-white/70 leading-relaxed italic flex gap-2">
+                     {n.notes}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {Object.keys(prs).length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="tab-heading text-lg flex items-center gap-2">
+              <Trophy size={18} className="text-[var(--yellow)]" />
+              Personal Records
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.entries(prs).map(([key, data], i) => (
+              <div key={i} className="glass-card p-5 relative overflow-hidden group border border-[var(--border)] hover:border-[var(--yellow)] transition-all">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-[var(--yellow)]/10 -mr-8 -mt-8 rounded-full blur-xl transition-all" />
+                <div className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mb-1">{data.date}</div>
+                <div className="text-sm font-black uppercase tracking-tight mb-3 text-white capitalize">{key}</div>
+                <div className="flex items-end gap-1">
+                  <div className="text-2xl font-display font-black text-[var(--yellow)]">{data.weight}</div>
+                  <div className="text-[10px] font-bold text-[var(--muted)] mb-1 uppercase tracking-widest">KG × {data.reps}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="tab-heading text-lg flex items-center gap-2">
+            <Database size={18} className="text-cyan-400" />
+            Data Portability & Backup
+          </h2>
+        </div>
+        <div className="glass-card p-6 border border-[var(--border)] hover:border-cyan-500/30 transition-all">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h3 className="text-sm font-black uppercase tracking-tight text-white flex items-center gap-2">
+                Secure Training History Backup
+              </h3>
+              <p className="text-xs text-[var(--muted)] leading-relaxed max-w-2xl">
+                Export your full training log, exercise history, and personal records (PRs) as an offline-compatible JSON file. This allows you to safely back up your data, import it on other devices, or run custom data analytics.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  try {
+                    const dataObj = {
+                      workoutData: fullHistory || {},
+                      prs: prs || {},
+                      exportedAt: new Date().toISOString(),
+                      totalSessions: Object.values(fullHistory || {}).flat().length,
+                      deviceUid: localStorage.getItem('lv_session_uid') || 'local-user',
+                      appVersion: "1.1.0"
+                    };
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `levelup_workout_backup_${new Date().toLocaleDateString('en-CA')}.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                    
+                    setBackupSuccess(true);
+                    setTimeout(() => setBackupSuccess(false), 4000);
+                  } catch (err) {
+                    console.error("Backup failed:", err);
+                  }
+                }}
+                className="py-3 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-black font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10 active:scale-[0.98]"
+              >
+                <Download size={14} />
+                Download JSON Backup
+              </button>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {backupSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-3 text-xs text-cyan-400 font-bold overflow-hidden"
+              >
+                <CheckCircle2 size={16} className="text-cyan-400 shrink-0" />
+                <span>Backup successful! File saved: <strong>levelup_workout_backup_{new Date().toLocaleDateString('en-CA')}.json</strong>. Your training history is fully secured.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

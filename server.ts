@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // Persistent state storage (JSON files acting as local database)
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/data' : path.join(process.cwd(), 'data');
+const STORAGE_DIR = path.join(process.cwd(), 'data');
 const REMINDERS_FILE = path.join(STORAGE_DIR, 'reminders.json');
 const HABITS_FILE = path.join(STORAGE_DIR, 'habits.json');
 
@@ -218,7 +218,7 @@ app.post('/api/ai', async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       contents: prompt,
       config: {
         systemInstruction,
@@ -309,8 +309,4 @@ async function startServer() {
   });
 }
 
-if (!process.env.VERCEL) {
-  startServer();
-}
-
-export default app;
+startServer();

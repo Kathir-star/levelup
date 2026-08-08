@@ -1214,7 +1214,7 @@ export default function Dashboard({
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} allowDuplicatedCategory={false} />
+                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
@@ -1244,7 +1244,7 @@ export default function Dashboard({
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} allowDuplicatedCategory={false} />
+                    <XAxis dataKey="name" stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} axisLine={false} />
                     <Tooltip 
                       cursor={{ fill: 'var(--sub)' }}

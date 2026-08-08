@@ -4,11 +4,12 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig({
-  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, '.'),
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     },
     dedupe: ['react', 'react-dom']
   },
@@ -20,20 +21,6 @@ export default defineConfig({
       protocol: 'wss',
       host: 'ais-dev-abpyzgtehgloftmrbpss3v-708515236167.asia-east1.run.app',
       clientPort: 443
-    }
-  },
-  build: {
-    outDir: 'dist',
-    chunkSizeWarningLimit: 800,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-recharts': ['recharts'],
-          'vendor-icons': ['lucide-react'],
-          'vendor-motion': ['framer-motion']
-        }
-      }
     }
   }
 });
