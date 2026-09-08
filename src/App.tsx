@@ -55,13 +55,14 @@ import NotificationSettings from './components/NotificationSettings';
 import SelfMastery from './components/SelfMastery';
 
 
-function SplashScreen() {
+function SplashScreen({ onDismiss }: { onDismiss?: () => void }) {
   return (
     <motion.div 
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5, ease: "easeInOut" }}
-      className="fixed inset-0 z-[1000] bg-[#0a0a0a] flex flex-col items-center justify-center"
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      onClick={onDismiss}
+      className="fixed inset-0 z-[1000] bg-[#0a0a0a] flex flex-col items-center justify-center cursor-pointer select-none p-4"
     >
       <motion.div 
         animate={{ 
@@ -69,33 +70,34 @@ function SplashScreen() {
           filter: ["brightness(1) drop-shadow(0 0 10px rgba(255, 51, 51, 0.3))", "brightness(1.2) drop-shadow(0 0 25px rgba(255, 51, 51, 0.7))", "brightness(1) drop-shadow(0 0 10px rgba(255, 51, 51, 0.3))"]
         }}
         transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-        className="mb-8"
+        className="mb-6"
       >
         <img 
           src="https://res.cloudinary.com/df2ejdvcz/image/upload/v1778747229/logo_ihy7qo.jpg" 
           alt="Level Up Logo" 
-          className="w-32 h-32 md:w-48 md:h-48 object-contain rounded-2xl"
+          className="w-28 h-28 md:w-44 md:h-44 object-contain rounded-2xl shadow-2xl"
         />
       </motion.div>
       <motion.h1 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="font-display text-4xl md:text-5xl font-black text-white italic tracking-wider uppercase mb-2"
+        className="font-display text-3xl md:text-5xl font-black text-white italic tracking-wider uppercase mb-1 text-center"
       >
         LEVEL <span className="text-[var(--accent)]">UP</span>
       </motion.h1>
       <motion.p 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="text-[var(--muted)] text-sm font-bold uppercase tracking-[0.2em] mb-8"
+        transition={{ delay: 0.15 }}
+        className="text-[var(--muted)] text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-6 text-center"
       >
         Train. Transform. Dominate.
       </motion.p>
       
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-bold text-[var(--accent)] uppercase tracking-widest animate-pulse">Loading Beast Mode 😈</span>
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-8 h-8 border-3 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <span className="text-[11px] font-black text-[var(--accent)] uppercase tracking-widest animate-pulse">Entering Arena 💪</span>
+        <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-2">Tap anywhere to skip</span>
       </div>
     </motion.div>
   );
@@ -166,8 +168,8 @@ export default function App() {
   }, [jarvisEnabled]);
 
   useEffect(() => {
-    // Hide splash screen after 2.5 seconds
-    const timer = setTimeout(() => setShowSplash(false), 2500);
+    // Hide splash screen smoothly after fast 800ms
+    const timer = setTimeout(() => setShowSplash(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
@@ -178,11 +180,15 @@ export default function App() {
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check for service worker updates
+    // Check for service worker updates safely
     if ('serviceWorker' in navigator) {
+      let isRefreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // This fires when the service worker controlling this page changes
-        window.location.reload();
+        if (!isRefreshing && window.sessionStorage.getItem('lv_sw_updating')) {
+          isRefreshing = true;
+          window.sessionStorage.removeItem('lv_sw_updating');
+          window.location.reload();
+        }
       });
 
       navigator.serviceWorker.ready.then(registration => {
@@ -978,16 +984,24 @@ export default function App() {
 
   const streak = calculateStreak(workoutData);
 
-  if (showSplash) {
-    return <SplashScreen />;
-  }
-
   if (!username) {
-    return <WelcomeScreen onStart={handleStartApp} />;
+    return (
+      <>
+        <AnimatePresence>
+          {showSplash && <SplashScreen onDismiss={() => setShowSplash(false)} />}
+        </AnimatePresence>
+        <WelcomeScreen onStart={handleStartApp} />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Splash Screen Smooth Fadeout Overlay */}
+      <AnimatePresence>
+        {showSplash && <SplashScreen onDismiss={() => setShowSplash(false)} />}
+      </AnimatePresence>
+
       {/* Reward Notification Banner */}
       <AnimatePresence>
         {showRewardBanner && (
@@ -1350,19 +1364,19 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.5, y: 50 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="fixed bottom-[74px] right-2 sm:bottom-24 sm:right-6 z-[180] flex flex-col items-end cursor-pointer"
+          className="fixed bottom-[64px] right-2 sm:bottom-20 sm:right-5 z-[170] flex flex-col items-end cursor-pointer"
           onMouseEnter={() => setFabHovered(true)}
           onMouseLeave={() => setFabHovered(false)}
           onClick={() => setShowAICoachModal(true)}
-          whileHover={{ scale: 1.08 }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.9, y: 2 }}
           transition={{ type: "spring", stiffness: 350, damping: 14 }}
         >
-          <div className="relative group p-2">
-            <span className="absolute inset-x-4 inset-y-4 rounded-full bg-[var(--accent)]/10 animate-ping opacity-25 pointer-events-none" />
+          <div className="relative group p-1 sm:p-2">
+            <span className="absolute inset-x-3 inset-y-3 rounded-full bg-[var(--accent)]/10 animate-ping opacity-25 pointer-events-none" />
             <AICoachRobot 
               mode={fabHovered ? 'greeting' : 'idle'} 
-              size={105} 
+              size={80} 
               showSpeechBubble={fabHovered}
               speechText="Coach Ready! 💪"
             />

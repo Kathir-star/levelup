@@ -56,8 +56,17 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => {
-          return caches.match('/') || caches.match('/index.html');
+        .catch(async () => {
+          try {
+            const cached = (await caches.match('/index.html')) || (await caches.match('/'));
+            if (cached) return cached;
+          } catch (e) {
+            console.warn('[SW] Offline cache match error', e);
+          }
+          return new Response('<!DOCTYPE html><html><body><p>Offline - Level Up Fitness</p></body></html>', {
+            headers: { 'Content-Type': 'text/html' },
+            status: 200
+          });
         })
     );
     return;
@@ -72,18 +81,24 @@ self.addEventListener('fetch', (event) => {
         }
 
         return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          if (!response || response.status !== 200) {
             return response;
           }
 
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            if (event.request.url.startsWith('http')) {
-              cache.put(event.request, responseToCache);
-            }
-          });
+          // Cache valid local or CDN assets safely
+          if (response.type === 'basic' || response.type === 'cors') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              if (event.request.url.startsWith('http')) {
+                cache.put(event.request, responseToCache);
+              }
+            });
+          }
 
           return response;
+        }).catch((err) => {
+          // If offline and not in cache, avoid crashing
+          return new Response('', { status: 408, statusText: 'Offline asset unavailable' });
         });
       })
   );

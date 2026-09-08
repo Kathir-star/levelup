@@ -157,7 +157,7 @@ export default function VoiceButton({
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
-            className="fixed bottom-24 right-4 sm:right-6 z-[250] w-[345px] max-w-[90vw] glass-card border border-cyan-500/30 p-5 rounded-3xl shadow-2xl shadow-cyan-500/10 flex flex-col gap-4 overflow-hidden"
+            className="fixed bottom-20 right-3 sm:right-6 z-[300] w-[340px] max-w-[92vw] glass-card border border-cyan-500/30 p-4 sm:p-5 rounded-3xl shadow-2xl shadow-cyan-500/10 flex flex-col gap-3.5 overflow-hidden max-h-[80vh]"
           >
             {/* Visual Header */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -315,7 +315,7 @@ export default function VoiceButton({
       </AnimatePresence>
 
       {/* Floating Jarvis Trigger Button */}
-      <div className="fixed bottom-24 right-4 sm:right-6 z-[200] flex flex-col items-center gap-2 group/trigger">
+      <div className="fixed bottom-[135px] right-3 sm:bottom-36 sm:right-6 z-[200] flex flex-col items-center gap-2 group/trigger">
         {/* Small Exit X button on hover/trigger */}
         <button
           onClick={(e) => {
@@ -335,7 +335,7 @@ export default function VoiceButton({
               handleMicClick();
             }
           }}
-          className={`relative h-14 w-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 shadow-2xl active:scale-95 group ${
+          className={`relative h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 shadow-2xl active:scale-95 group ${
             isListening 
               ? 'bg-red-500 shadow-red-500/20 hover:bg-red-600' 
               : isSpeaking 
@@ -352,13 +352,13 @@ export default function VoiceButton({
           )}
 
           {isListening ? (
-            <Mic size={22} className="text-white animate-pulse" />
+            <Mic size={20} className="text-white animate-pulse" />
           ) : isThinking ? (
-            <Loader2 size={22} className="text-white animate-spin" />
+            <Loader2 size={20} className="text-white animate-spin" />
           ) : isSpeaking ? (
-            <Volume2 size={22} className="text-white animate-bounce" />
+            <Volume2 size={20} className="text-white animate-bounce" />
           ) : (
-            <Mic size={22} className="text-white group-hover:scale-110 transition-transform" />
+            <Mic size={20} className="text-white group-hover:scale-110 transition-transform" />
           )}
         </button>
       </div>
