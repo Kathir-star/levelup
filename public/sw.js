@@ -1,14 +1,16 @@
-const CACHE_NAME = 'levelup-cache-v3';
-const urlsToCache = [
+const CACHE_NAME = 'levelup-v2.0.0';
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/version.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .catch(() => {})
   );
   self.skipWaiting();
 });
@@ -17,90 +19,11 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
       );
-    })
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // 1. ALWAYS go Network-Only for version.json and API endpoints so they are never cached/stale
-  if (
-    url.pathname.includes('version.json') || 
-    url.pathname.includes('/api/')
-  ) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // 2. NETWORK-FIRST strategy for navigation (the HTML entry point)
-  // This allows the app to load the fresh index.html with new asset hashes instantly when online,
-  // falling back to the cached index.html if completely offline.
-  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(async () => {
-          try {
-            const cached = (await caches.match('/index.html')) || (await caches.match('/'));
-            if (cached) return cached;
-          } catch (e) {
-            console.warn('[SW] Offline cache match error', e);
-          }
-          return new Response('<!DOCTYPE html><html><body><p>Offline - Level Up Fitness</p></body></html>', {
-            headers: { 'Content-Type': 'text/html' },
-            status: 200
-          });
-        })
-    );
-    return;
-  }
-
-  // 3. CACHE-FIRST strategy for static assets (images, fonts, stylesheets, scripts)
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200) {
-            return response;
-          }
-
-          // Cache valid local or CDN assets safely
-          if (response.type === 'basic' || response.type === 'cors') {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              if (event.request.url.startsWith('http')) {
-                cache.put(event.request, responseToCache);
-              }
-            });
-          }
-
-          return response;
-        }).catch((err) => {
-          // If offline and not in cache, avoid crashing
-          return new Response('', { status: 408, statusText: 'Offline asset unavailable' });
-        });
-      })
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -110,49 +33,49 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Web Push Notification Event listeners
-self.addEventListener('push', (event) => {
-  let data = { title: 'LevelUp Coach', body: "It's training time, Champion! Log your progress." };
-  
-  if (event.data) {
-    try {
-      data = event.data.json();
-    } catch (e) {
-      data = { title: 'LevelUp Coach', body: event.data.text() };
-    }
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+
+  // Never intercept cross-origin requests (Firebase, Google Auth, Cloudinary, Fonts) or API endpoints
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
+    return;
   }
 
-  const options = {
-    body: data.body || data.message || "Keep up the consistency!",
-    icon: data.icon || '/favicon.ico',
-    badge: data.badge || '/favicon.ico',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: '1'
-    }
-  };
+  // Always network-first for version.json and sw.js
+  if (url.pathname === '/version.json' || url.pathname === '/sw.js') {
+    event.respondWith(
+      fetch(req, { cache: 'no-store' }).catch(() => caches.match(req))
+    );
+    return;
+  }
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
-});
+  // SPA Navigation requests: Network-first, fallback to cached /index.html
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  
-  // Focus or open application window
-  event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+  // Static assets: Network-first with cache fallback so updates are always fresh on mobile
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
-    })
+        return res;
+      })
+      .catch(() => caches.match(req).then((cached) => cached || caches.match('/index.html')))
   );
 });
-

@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "UserVault": {
+      "title": "UserVault",
+      "description": "Encrypted/scoped cloud state for a LevelUp user including profile, workout logs, nutrition, water, sleep, body stats, challenges, and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID of the owner" },
+        "email": { "type": "string", "description": "User email" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "schemaVersion": { "type": "number", "description": "Data schema version for migrations" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last sync" },
+        "xp": { "type": "number", "description": "Total user XP" },
+        "profile": { "type": "object", "description": "UserProfile data" },
+        "workoutData": { "type": "object", "description": "Date-keyed workout entries" },
+        "prs": { "type": "object", "description": "Personal records map" },
+        "steps": { "type": "number", "description": "Today's step count" },
+        "stepsHistory": { "type": "object", "description": "Date-keyed step count history" },
+        "water": { "type": "number", "description": "Today's water glasses" },
+        "waterHistory": { "type": "object", "description": "Date-keyed water intake in ml" },
+        "sleepData": { "type": "array", "description": "Sleep entries array" },
+        "missions": { "type": "array", "description": "Daily missions array" },
+        "nutritionLogs": { "type": "object", "description": "Date-keyed food and macro logs" },
+        "customFoods": { "type": "array", "description": "User custom food items" },
+        "savedMeals": { "type": "array", "description": "Saved meal templates" },
+        "bodyMetricsHistory": { "type": "array", "description": "Historical weight, BMI, body fat logs" },
+        "selfMastery": { "type": "object", "description": "Self mastery habits, streak, and relapse logs" },
+        "plannerSchedule": { "type": "object", "description": "Weekly split and scheduled missions" },
+        "winterArc": { "type": "object", "description": "Winter Arc and challenge state" },
+        "settings": { "type": "object", "description": "App preferences, targets, and theme settings" }
+      },
+      "required": ["uid", "schemaVersion", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserVault" },
+      "description": "Per-user fitness data vault with strict owner-only access"
+    }
+  }
+}

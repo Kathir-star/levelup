@@ -1,90 +1,167 @@
-export type MuscleGroup = 'Chest' | 'Back' | 'Legs' | 'Biceps' | 'Triceps' | 'Shoulder' | 'Abs' | 'Cardio' | 'Full Body' | 'Glutes' | 'Hamstrings' | 'Quadriceps';
+export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'legs' | 'abs';
+
+export type FitnessGoal = 'Muscle Gain' | 'Fat Loss' | 'Maintenance' | 'Body Recomposition' | 'Athletic Performance';
+export type ActivityLevel = 'Sedentary' | 'Lightly Active' | 'Moderately Active' | 'Very Active' | 'Athlete';
+export type DietaryPreference = 'Vegetarian' | 'Eggetarian' | 'Non-Vegetarian' | 'Vegan';
 
 export interface Exercise {
+  id: string;
   name: string;
+  type: 'COMPOUND' | 'ISOLATION';
   sets: string;
   reps: string;
   rest: string;
-  intensity?: 'beginner' | 'intermediate' | 'advanced';
-  image?: string;
-  notes?: string;
+  cue: string;
+  mistake: string;
+  gif?: string;
 }
 
-export interface DayPlan {
-  day: string;
-  focus: string;
-  rest?: boolean;
-  exercises?: Exercise[];
-  tip?: string;
-  color?: string;
-}
-
-export interface WeeklyPlan {
-  name: string;
-  tip: string;
-  days: DayPlan[];
+export interface SetDetail {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  rpe?: number;
+  isWarmup?: boolean;
+  completed?: boolean;
 }
 
 export interface WorkoutEntry {
+  id: string;
+  exerciseName: string;
   muscle: MuscleGroup;
-  exerciseName?: string;
   weight: number;
   reps: number;
   sets: number;
+  setDetails?: SetDetail[];
   notes?: string;
-  time: string;
+  duration?: number;
   date: string;
-  timestamp?: any;
+  timestamp: string;
   isPR?: boolean;
 }
 
 export interface UserProfile {
   name: string;
-  height?: number;
-  weight?: number;
-  goal?: 'loss' | 'maintain' | 'gain';
-  age?: number;
-  gender?: 'male' | 'female';
-  level?: 'beginner' | 'intermediate' | 'advanced';
-  updatedAt?: any;
-  role?: 'user' | 'admin';
+  email?: string;
+  uid?: string;
+  height: number; // cm
+  weight: number; // kg
+  targetWeight?: number; // kg
+  age: number;
+  gender: 'male' | 'female';
+  neck: number; // cm
+  waist: number; // cm
+  hip?: number; // cm (for female)
+  goal?: FitnessGoal;
+  activityLevel?: ActivityLevel;
+  dietPreference?: DietaryPreference;
 }
 
 export interface PR {
   weight: number;
   reps: number;
   date: string;
+  estimated1RM?: number;
+}
+
+export interface SleepEntry {
+  id?: string;
+  date: string;
+  bedTime?: string;
+  wakeTime?: string;
+  hours: number;
+  quality: 'Poor' | 'Average' | 'Good' | 'Excellent';
+  notes?: string;
 }
 
 export interface DailyMission {
   id: string;
-  text: string;
+  title: string;
   completed: boolean;
-  xpReward: number;
+  xp: number;
+  type: 'steps' | 'workout' | 'water' | 'sleep' | 'nutrition';
 }
 
-export interface SleepEntry {
-  hours: number;
-  quality: 'Poor' | 'Average' | 'Good';
-  date: string;
+export interface FoodItem {
+  id: string;
+  name: string;
+  category: 'South Indian' | 'Protein' | 'Grains & Carbs' | 'Dairy & Beverages' | 'Fruits & Veggies' | 'Snacks & Fast Food' | 'Custom';
+  servingUnit: 'piece' | 'bowl' | 'cup' | 'plate' | 'tbsp' | 'scoop' | '100g' | 'glass' | 'packet';
+  servingLabel: string; // e.g., "1 piece (50g)" or "1 medium bowl (150g)"
+  gramsPerUnit: number;
+  calories: number; // per 1 servingUnit
+  protein: number;
+  carbs: number;
+  fats: number;
+  fiber: number;
+  sugar?: number;
+  sodium?: number; // mg
+  isVeg?: boolean;
+  isCustom?: boolean;
 }
 
-export interface WaterEntry {
-  amount: number; // in ml
-  date: string;
+export type MealSlot = 'Breakfast' | 'Mid-Morning' | 'Lunch' | 'Evening Snack' | 'Pre-Workout' | 'Post-Workout' | 'Dinner';
+
+export interface LoggedFoodEntry {
+  id: string;
+  foodId: string;
+  foodName: string;
+  mealSlot: MealSlot;
+  quantity: number;
+  unitMode: 'serving' | 'grams'; // whether quantity is in servingUnit or grams
+  servingLabel: string;
+  gramsTotal: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  fiber: number;
+  sugar: number;
+  sodium: number;
+  date: string; // YYYY-MM-DD
   timestamp: string;
 }
 
-export type MoodType = '😄' | '😐' | '😞' | '😤' | '😴';
-
-export interface MoodEntry {
-  mood: MoodType;
-  date: string;
-  timestamp: string;
+export interface SavedMealTemplate {
+  id: string;
+  name: string;
+  items: {
+    foodId: string;
+    foodName: string;
+    quantity: number;
+    unitMode: 'serving' | 'grams';
+  }[];
 }
 
-export interface UserStats {
-  streak: number;
-  lastWorkout: string;
-  totalWorkouts: number;
+export interface BodyMetricEntry {
+  id: string;
+  date: string;
+  weight: number;
+  height: number;
+  waist: number;
+  neck: number;
+  hip?: number;
+  chest?: number;
+  arms?: number;
+  thighs?: number;
+  bmi: number;
+  bodyFat: number;
+  leanMass: number;
+  fatMass: number;
+}
+
+export interface AppSettings {
+  units: 'metric' | 'imperial';
+  calorieTarget: number; // 0 = auto-calculated
+  proteinTarget: number; // 0 = auto-calculated
+  carbsTarget: number;
+  fatsTarget: number;
+  fiberTarget: number;
+  waterGoalMl: number;
+  stepGoal: number;
+  sleepGoalHours: number;
+  workoutDaysTarget: number;
+  autoSyncCloud: boolean;
+  notificationsEnabled: boolean;
+  tamilQuotes: boolean;
 }

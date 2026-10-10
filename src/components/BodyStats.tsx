@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { UserProfile } from '../types';
+import { UserProfile, BodyMetricEntry } from '../types';
 import { cn } from '../lib/utils';
-import { Calculator, Scale, Ruler, Target, Info, User, Zap } from 'lucide-react';
+import { Calculator, Scale, Ruler, Target, Info, User, Zap, TrendingDown, TrendingUp, Plus, History } from 'lucide-react';
 
 interface BodyStatsProps {
   profile: UserProfile;
@@ -9,18 +9,47 @@ interface BodyStatsProps {
 }
 
 export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
-  const [height, setHeight] = useState(profile.height?.toString() || '');
-  const [weight, setWeight] = useState(profile.weight?.toString() || '');
-  const [age, setAge] = useState(profile.age?.toString() || '');
+  const userKey = profile.name || localStorage.getItem('username') || 'Athlete';
+  const [height, setHeight] = useState(profile.height?.toString() || '175');
+  const [weight, setWeight] = useState(profile.weight?.toString() || '70');
+  const [targetWeight, setTargetWeight] = useState(profile.targetWeight?.toString() || '68');
+  const [age, setAge] = useState(profile.age?.toString() || '24');
+  const [waistCm, setWaistCm] = useState(profile.waistCm?.toString() || '80');
+  const [neckCm, setNeckCm] = useState(profile.neckCm?.toString() || '38');
+  const [hipCm, setHipCm] = useState(profile.hipCm?.toString() || '95');
   const [gender, setGender] = useState<any>(profile.gender || 'male');
   const [goal, setGoal] = useState<any>(profile.goal || 'maintain');
+
+  const [metricsHistory, setMetricsHistory] = useState<BodyMetricEntry[]>(() => {
+    try {
+      const raw = localStorage.getItem(`lv_body_metrics_${userKey}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const bmiData = useMemo(() => {
     const h = Number(height);
     const w = Number(weight);
+    const waist = Number(waistCm);
+    const neck = Number(neckCm);
+    const hip = Number(hipCm);
     if (!h || !w) return null;
     const bmi = (w / ((h / 100) ** 2)).toFixed(1);
     const bmiNum = Number(bmi);
+
+    // US Navy Body Fat Formula
+    let bodyFat = 0;
+    if (waist > 0 && neck > 0 && h > 0) {
+      if (gender === 'male' && waist > neck) {
+        bodyFat = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450;
+      } else if (gender === 'female' && hip > 0 && waist + hip > neck) {
+        bodyFat = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(h)) - 450;
+      }
+    }
+    const cleanBodyFat = bodyFat > 2 && bodyFat < 65 ? Number(bodyFat.toFixed(1)) : Number((1.20 * bmiNum + 0.23 * (Number(age) || 24) - (gender === 'male' ? 16.2 : 5.4)).toFixed(1));
+    const leanMassKg = Number((w * (1 - Math.max(5, cleanBodyFat) / 100)).toFixed(1));
     
     let status = '';
     let color = '';
@@ -31,44 +60,71 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
     if (bmiNum < 18.5) { 
       status = 'Underweight'; 
       color = 'text-[var(--yellow)]';
-      description = 'Your BMI indicates you are underweight. Focus on nutrient-dense foods and strength training.';
+      description = 'Your BMI indicates you are underweight. Focus on nutrient-dense foods and progressive strength training.';
       intensity = 'Beginner / Intermediate';
       plan = 'Strength + Muscle Gain Focus';
     }
     else if (bmiNum < 25) { 
       status = 'Normal'; 
       color = 'text-[var(--green)]';
-      description = 'You are in the healthy BMI range! Use this as a baseline for body recomposition.';
+      description = 'You are in the healthy BMI range! Use this as a baseline for lean muscle recomposition.';
       intensity = 'Intermediate / Advanced';
       plan = 'Balanced Hypertrophy Split';
     }
     else if (bmiNum < 30) { 
       status = 'Overweight'; 
       color = 'text-[var(--yellow)]';
-      description = 'Your BMI is in the overweight category. Aim for a manageable calorie deficit.';
+      description = 'Your BMI is in the overweight category. Aim for a high-protein 400 kcal deficit + daily steps.';
       intensity = 'Intermediate';
       plan = 'Fat Loss + Cardio + Full Body';
     }
     else { 
       status = 'Obese'; 
       color = 'text-[var(--red)]';
-      description = 'Prioritizing heart health and steady fat loss is recommended. Consult a professional.';
+      description = 'Prioritizing heart health, joint-safe strength training, and steady fat loss is recommended.';
       intensity = 'Beginner / Guided';
       plan = 'Lower Impact + High Frequency Cardio';
     }
     
-    return { bmi, bmiNum, status, color, description, intensity, plan };
-  }, [height, weight]);
+    return { bmi, bmiNum, bodyFat: cleanBodyFat, leanMassKg, status, color, description, intensity, plan };
+  }, [height, weight, waistCm, neckCm, hipCm, gender, age]);
 
   const handleSave = () => {
-    onUpdate({ 
+    const updatedProfile: UserProfile = { 
       ...profile, 
       height: Number(height), 
       weight: Number(weight), 
+      targetWeight: Number(targetWeight),
       age: Number(age),
+      waistCm: Number(waistCm),
+      neckCm: Number(neckCm),
+      hipCm: Number(hipCm),
+      bodyFat: bmiData?.bodyFat,
       gender,
       goal 
-    });
+    };
+    onUpdate(updatedProfile);
+
+    if (bmiData) {
+      const todayStr = new Date().toLocaleDateString('en-CA');
+      const newEntry: BodyMetricEntry = {
+        id: 'bm_' + Date.now(),
+        date: todayStr,
+        weight: Number(weight),
+        height: Number(height),
+        bmi: bmiData.bmiNum,
+        bodyFat: bmiData.bodyFat,
+        waistCm: Number(waistCm) || undefined,
+        neckCm: Number(neckCm) || undefined,
+        hipCm: Number(hipCm) || undefined
+      };
+      const filtered = metricsHistory.filter(m => m.date !== todayStr);
+      const nextHistory = [...filtered, newEntry].sort((a, b) => b.date.localeCompare(a.date));
+      setMetricsHistory(nextHistory);
+      try {
+        localStorage.setItem(`lv_body_metrics_${userKey}`, JSON.stringify(nextHistory));
+      } catch {}
+    }
   };
 
   return (
@@ -119,7 +175,7 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="space-y-2">
               <label className="tab-heading ml-1 block text-[var(--muted)] font-black">Age</label>
               <input 
@@ -127,7 +183,7 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
                 value={age} 
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="25"
-                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-3.5 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-lg text-center"
               />
             </div>
             <div className="space-y-2">
@@ -137,7 +193,17 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
                 value={weight} 
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="70"
-                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-3.5 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-lg text-center"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="tab-heading ml-1 block text-[var(--muted)] font-black">Target Wt (kg)</label>
+              <input 
+                type="number" 
+                value={targetWeight} 
+                onChange={(e) => setTargetWeight(e.target.value)}
+                placeholder="68"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-3.5 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-lg text-center"
               />
             </div>
             <div className="space-y-2">
@@ -147,18 +213,69 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
                 value={height} 
                 onChange={(e) => setHeight(e.target.value)}
                 placeholder="175"
-                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-4 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-xl text-center"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-2xl p-3.5 text-white focus:border-[var(--accent)] transition-all outline-none font-black text-lg text-center"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-[var(--border)]">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)] block">Waist (cm)</label>
+              <input 
+                type="number" 
+                value={waistCm} 
+                onChange={(e) => setWaistCm(e.target.value)}
+                placeholder="80"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-xl p-2.5 text-white focus:border-[var(--accent)] outline-none font-bold text-sm text-center"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)] block">Neck (cm)</label>
+              <input 
+                type="number" 
+                value={neckCm} 
+                onChange={(e) => setNeckCm(e.target.value)}
+                placeholder="38"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-xl p-2.5 text-white focus:border-[var(--accent)] outline-none font-bold text-sm text-center"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)] block">Hip (cm)</label>
+              <input 
+                type="number" 
+                value={hipCm} 
+                onChange={(e) => setHipCm(e.target.value)}
+                placeholder="95"
+                className="w-full bg-[var(--sub)] border border-[var(--border)] rounded-xl p-2.5 text-white focus:border-[var(--accent)] outline-none font-bold text-sm text-center"
               />
             </div>
           </div>
 
           <button 
             onClick={handleSave}
-            className="w-full bg-[var(--accent)] text-white font-black py-5 rounded-3xl shadow-xl shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-2"
+            className="w-full bg-[var(--accent)] text-white font-black py-5 rounded-3xl shadow-xl shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-2 cursor-pointer"
           >
             <Target size={18} />
-            Save & Update Plan
+            Log Body Metrics & Update Plan
           </button>
+
+          {metricsHistory.length > 0 && (
+            <div className="pt-4 border-t border-[var(--border)] space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] flex items-center gap-1.5">
+                <History size={12} className="text-[var(--accent)]" /> Logged Body Progress History
+              </div>
+              <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                {metricsHistory.slice(0, 8).map((entry) => (
+                  <div key={entry.id} className="p-2.5 rounded-xl bg-[var(--sub)] border border-[var(--border)] flex items-center justify-between text-xs">
+                    <span className="font-mono text-[10px] text-[var(--muted)]">{entry.date}</span>
+                    <span className="font-black text-white">{entry.weight} kg</span>
+                    <span className="font-bold text-cyan-400">BMI {entry.bmi}</span>
+                    {entry.bodyFat && <span className="font-bold text-amber-400">{entry.bodyFat}% BF</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="relative group perspective">
@@ -167,14 +284,21 @@ export default function BodyStats({ profile, onUpdate }: BodyStatsProps) {
           <div className="glass-card p-8 h-full flex flex-col justify-center overflow-hidden border-t-4 border-t-[var(--accent)]">
             {bmiData ? (
               <div className="space-y-8 animate-in fade-in zoom-in-95 duration-700">
-                <div className="text-center space-y-4">
-                  <div className="tab-heading text-[var(--muted)]">Calculated BMI Index</div>
-                  <div className={cn("text-8xl font-black tracking-tighter drop-shadow-[0_0_15px_var(--accent-glow)] transition-all", bmiData.color)}>{bmiData.bmi}</div>
-                  <div className={cn(
-                    "inline-block px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mt-4 shadow-lg animate-pulse",
-                    bmiData.status === 'Normal' ? "bg-[var(--green)]/20 text-[var(--green)]" : "bg-[var(--yellow)]/20 text-[var(--yellow)]"
-                  )}>
-                    {bmiData.status}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-4 rounded-2xl bg-[var(--sub)] border border-[var(--border)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">BMI Index</div>
+                    <div className={cn("text-3xl sm:text-4xl font-black tracking-tight mt-1", bmiData.color)}>{bmiData.bmi}</div>
+                    <div className="text-[9px] font-black uppercase mt-1 text-white/70">{bmiData.status}</div>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[var(--sub)] border border-[var(--border)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Est. Body Fat</div>
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight mt-1 text-amber-400">{bmiData.bodyFat}%</div>
+                    <div className="text-[9px] font-black uppercase mt-1 text-white/70">US Navy Method</div>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[var(--sub)] border border-[var(--border)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--muted)]">Lean Mass</div>
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight mt-1 text-cyan-400">{bmiData.leanMassKg}kg</div>
+                    <div className="text-[9px] font-black uppercase mt-1 text-white/70">Fat-Free Mass</div>
                   </div>
                 </div>
 

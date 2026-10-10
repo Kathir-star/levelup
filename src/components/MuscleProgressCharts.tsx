@@ -14,8 +14,11 @@ interface MuscleProgressChartsProps {
 export default function MuscleProgressCharts({ data = {}, prs = {} }: MuscleProgressChartsProps) {
   const [inspectingMuscle, setInspectingMuscle] = useState<string | null>(null);
   const allEntries = useMemo(() => {
-    if (!data) return [];
-    return Object.values(data).flat();
+    if (!data || typeof data !== 'object') return [];
+    return Object.values(data)
+      .filter(Array.isArray)
+      .flat()
+      .filter((e) => e && typeof e === 'object');
   }, [data]);
 
   const selectedMuscleEntries = useMemo(() => {

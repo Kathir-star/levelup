@@ -9,11 +9,12 @@ import ProgressRing from './common/ProgressRing';
 import AnimatedCard from './common/AnimatedCard';
 import TodayPlanPanel from './common/TodayPlanPanel';
 import { WorkoutEntry, UserProfile, DailyMission } from '../types';
+import { calculateWinterArcProgress } from '../utils/gamification';
 import { cn } from '../lib/utils';
 import { 
   ChevronLeft, ChevronRight, TrendingUp, Activity, Footprints, Droplets, Zap, Target, 
   CheckCircle2, Share2, Copy, Sparkles, Check, Brain, Wind, Play, Shield, Award,
-  Github, Linkedin, Instagram, Code
+  Github, Linkedin, Instagram, Code, Flame
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -157,6 +158,21 @@ export default function Dashboard({
   const level = Math.floor(xp / 100) + 1;
   const xpInLevel = xp % 100;
   const progressToNextLevel = (xpInLevel / 100) * 100;
+
+  const winterArcState = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('lvl_winter_arc');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { isActive: false, startDate: today, completedDays: [] };
+  }, [today]);
+
+  const winterArcProg = calculateWinterArcProgress(winterArcState);
+  const winterArcPct = winterArcProg.isStarted ? winterArcProg.consistencyPercent : 0;
+
+  const completedQuestsCount = missions ? missions.filter(m => m.completed).length : 0;
+  const totalQuestsCount = missions ? missions.length : 5;
+  const questProgressPct = totalQuestsCount > 0 ? Math.round((completedQuestsCount / totalQuestsCount) * 100) : 0;
 
   // Dynamic Smart Insights Calculation
   const smartInsights = useMemo(() => {
@@ -663,6 +679,71 @@ export default function Dashboard({
             className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--red)] transition-all duration-1000 shadow-[0_0_10px_var(--accent-glow)]"
             style={{ width: `${progressToNextLevel}%` }}
           />
+        </div>
+      </div>
+
+      {/* 🎯 Circular SVG Progress Indicators: Winter Arc & Daily Quests */}
+      <div className="glass-card p-4 sm:p-5 bg-gradient-to-r from-blue-950/20 via-black to-purple-950/20 border border-blue-500/20 rounded-2xl relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <Sparkles size={15} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase text-white tracking-tight">Mission & Arc Progress HUD</h3>
+              <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-wider">Real-time circular telemetry</p>
+            </div>
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300">
+            Active Protocols
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center justify-items-center py-2">
+          <div className="flex flex-col items-center gap-2 w-full bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+            <ProgressRing
+              progress={winterArcPct}
+              size={115}
+              strokeWidth={9}
+              gradientId="winterArcGradient"
+              startColor="#3b82f6"
+              endColor="#8b5cf6"
+              icon={<Flame size={18} className="text-blue-400 animate-pulse" />}
+              label="Winter Arc"
+              valueString={`${winterArcPct}%`}
+            />
+            <div className="text-center mt-1">
+              <span className="text-[11px] font-black text-white uppercase tracking-tight">
+                {winterArcProg.isStarted ? winterArcProg.path.title : 'Winter Arc Not Started'}
+              </span>
+              <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                {winterArcProg.isStarted ? `${winterArcProg.daysCompleted} days completed` : 'Activate in Challenges'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2 w-full bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+            <ProgressRing
+              progress={questProgressPct}
+              size={115}
+              strokeWidth={9}
+              gradientId="questGradient"
+              startColor="#10b981"
+              endColor="#3b82f6"
+              icon={<CheckCircle2 size={18} className="text-emerald-400" />}
+              label="Daily Quests"
+              valueString={`${completedQuestsCount}/${totalQuestsCount}`}
+            />
+            <div className="text-center mt-1">
+              <span className="text-[11px] font-black text-white uppercase tracking-tight">
+                {completedQuestsCount === totalQuestsCount ? 'All Quests Crushed! 🏆' : `${totalQuestsCount - completedQuestsCount} Quests Remaining`}
+              </span>
+              <p className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                {questProgressPct}% Daily Completion Rate
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

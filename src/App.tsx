@@ -33,7 +33,11 @@ import {
   Info,
   Brain,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Utensils,
+  Cloud,
+  Sliders,
+  BarChart3
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import WorkoutLog from './components/WorkoutLog';
@@ -53,6 +57,22 @@ import ExerciseAnimations from './components/ExerciseAnimations';
 import Logo from './components/common/Logo';
 import NotificationSettings from './components/NotificationSettings';
 import SelfMastery from './components/SelfMastery';
+import NutritionTracker from './components/NutritionTracker';
+import ChallengesView from './components/ChallengesView';
+import AnalyticsAndReports from './components/AnalyticsAndReports';
+import SettingsAndAuthModal from './components/SettingsAndAuthModal';
+import ErrorBoundary from './components/ErrorBoundary';
+import { auth, onAuthStateChanged, User } from './lib/firebase';
+import {
+  collectLocalVault,
+  mergeVaults,
+  writeVaultToLocalStorage,
+  pushVaultToCloud,
+  pullVaultFromCloud,
+  sanitizeWorkoutData
+} from './utils/cloudSync';
+import { DEFAULT_APP_SETTINGS } from './utils/nutritionDatabase';
+import { AppSettings } from './types';
 
 
 function SplashScreen({ onDismiss }: { onDismiss?: () => void }) {
@@ -140,7 +160,7 @@ function WelcomeScreen({ onStart }: { onStart: (name: string) => void }) {
   );
 }
 
-const CURRENT_VERSION = "1.1.0";
+const CURRENT_VERSION = "2.0.0";
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -156,7 +176,21 @@ export default function App() {
   const [sessionsSubTab, setSessionsSubTab] = useState<'male' | 'female' | 'home' | 'animations'>('animations');
   const [animationsCategory, setAnimationsCategory] = useState<'ALL' | 'PUSH' | 'PULL' | 'LEGS' | 'CORE' | 'MOBILITY' | 'CARDIO'>('ALL');
   const [logsSubTab, setLogsSubTab] = useState<'training' | 'bmi'>('training');
+  const [chartsSubTab, setChartsSubTab] = useState<'muscle' | 'reports'>('muscle');
   const [showAICoachModal, setShowAICoachModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'offline'>('idle');
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
+    try {
+      const u = localStorage.getItem('username') || 'Athlete';
+      const raw = localStorage.getItem(`lv_settings_${u}`);
+      return raw ? { ...DEFAULT_APP_SETTINGS, ...JSON.parse(raw) } : DEFAULT_APP_SETTINGS;
+    } catch {
+      return DEFAULT_APP_SETTINGS;
+    }
+  });
   const [fabHovered, setFabHovered] = useState(false);
   const [jarvisEnabled, setJarvisEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('lvl_jarvis_enabled');
@@ -180,7 +214,7 @@ export default function App() {
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check for service worker updates safely
+    //Check for service worker updates safely
     if ('serviceWorker' in navigator) {
       let isRefreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -197,10 +231,7 @@ export default function App() {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setUpdateDetails({
-                  version: "1.1.0",
-                  message: "Service Worker cache update found. Click Update to apply new workout telemetry."
-                });
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
               }
             });
           }
@@ -212,6 +243,11 @@ export default function App() {
   }, []);
 
   const forceUpdateApp = async () => {
+    if (updateDetails?.version) {
+      localStorage.setItem('lv_dismissed_version', updateDetails.version);
+    }
+    setIsUpdateDismissed(true);
+    setShowUpdateModal(false);
     addToast("🔄 Initiating high-speed cache purge...", "success");
     
     // Clear browser Cache Storage
@@ -241,7 +277,7 @@ export default function App() {
     // Force hard reload with cache buster
     setTimeout(() => {
       window.location.href = window.location.origin + '?v=' + Date.now();
-    }, 1000);
+    }, 600);
   };
 
   const setupPushNotifications = async () => {
@@ -280,7 +316,11 @@ export default function App() {
       if (!res.ok) throw new Error("Fetch failed");
       const data = await res.json();
       if (data && data.version) {
-        if (isVersionNewer(data.version, CURRENT_VERSION)) {
+        const dismissedVersion = localStorage.getItem('lv_dismissed_version');
+        if (
+          isVersionNewer(data.version, CURRENT_VERSION) &&
+          dismissedVersion !== data.version
+        ) {
           setUpdateDetails(data);
         }
       }
@@ -547,7 +587,7 @@ export default function App() {
       const savedData = localStorage.getItem(`lv_data_${username}`);
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        setWorkoutData(parsed.workoutData || {});
+        setWorkoutData(sanitizeWorkoutData(parsed.workoutData || {}));
         setUserProfile(parsed.userProfile || { name: username, gender: 'male' });
         setSteps(parsed.steps || {});
         setWater(parsed.water || {});
@@ -599,7 +639,134 @@ export default function App() {
       xp, missions, missionsDate: today 
     };
     localStorage.setItem(`lv_data_${username}`, JSON.stringify(dataToSave));
+    localStorage.setItem(`lv_water_history_${username}`, JSON.stringify(water));
+    localStorage.setItem(`lv_steps_history_${username}`, JSON.stringify(steps));
+    localStorage.setItem(`lv_prs_${username}`, JSON.stringify(prs));
+    localStorage.setItem(`lv_sleep_${username}`, JSON.stringify(Object.values(sleep)));
   }, [username, workoutData, userProfile, steps, water, prs, sleep, xp, missions, today]);
+
+  // Firebase Auth & Persistent Cloud Sync
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        setSyncStatus('syncing');
+        try {
+          const remoteVault = await pullVaultFromCloud(user.uid);
+          const currentProfile = userProfile.name ? userProfile : { name: username || user.displayName || 'Athlete', email: user.email || undefined, gender: 'male' as const };
+          const localVault = collectLocalVault(currentProfile, user.uid, user.email || undefined);
+
+          if (remoteVault) {
+            const merged = mergeVaults(localVault, remoteVault);
+            writeVaultToLocalStorage(merged);
+            if (merged.profile) {
+              setUsername(merged.profile.name);
+              setUserProfile(merged.profile);
+            }
+            setWorkoutData(sanitizeWorkoutData(merged.workoutData));
+            setPrs(merged.prs || {});
+            setSteps(merged.stepsHistory || {});
+            setWater(merged.waterHistory || {});
+            if (merged.xp !== undefined) setXp(merged.xp);
+            if (merged.settings) setAppSettings(merged.settings);
+            await pushVaultToCloud(merged);
+          } else {
+            await pushVaultToCloud(localVault);
+          }
+          const nowIso = new Date().toISOString();
+          setLastSyncedAt(nowIso);
+          setSyncStatus('synced');
+        } catch (err) {
+          console.warn('Initial cloud sync check:', err);
+          setSyncStatus('offline');
+        }
+      } else {
+        setSyncStatus('idle');
+      }
+    });
+    return () => unsubscribe();
+  }, [username]);
+
+  // Auto-push debounced changes when signed in
+  useEffect(() => {
+    if (!firebaseUser || !username || !userProfile.name) return;
+    if (!appSettings.autoSyncCloud) return;
+
+    const timer = setTimeout(async () => {
+      setSyncStatus('syncing');
+      const vault = collectLocalVault(userProfile, firebaseUser.uid, firebaseUser.email || undefined);
+      const ok = await pushVaultToCloud(vault);
+      if (ok) {
+        setLastSyncedAt(new Date().toISOString());
+        setSyncStatus('synced');
+      } else {
+        setSyncStatus('offline');
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [firebaseUser, username, workoutData, userProfile, steps, water, prs, sleep, xp, missions, appSettings]);
+
+  const handleManualSync = async () => {
+    if (!firebaseUser) {
+      addToast('Sign in first to sync with your cloud vault.', 'warning');
+      return;
+    }
+    setSyncStatus('syncing');
+    const localVault = collectLocalVault(userProfile, firebaseUser.uid, firebaseUser.email || undefined);
+    const remoteVault = await pullVaultFromCloud(firebaseUser.uid);
+    const finalVault = remoteVault ? mergeVaults(localVault, remoteVault) : localVault;
+    writeVaultToLocalStorage(finalVault);
+    const ok = await pushVaultToCloud(finalVault);
+    if (ok) {
+      setLastSyncedAt(new Date().toISOString());
+      setSyncStatus('synced');
+      addToast('☁️ Cloud vault synchronized! Zero data lost.', 'success');
+    } else {
+      setSyncStatus('offline');
+      addToast('Saved locally. Cloud sync will retry when online.', 'warning');
+    }
+  };
+
+  const handleExportJSON = () => {
+    const vault = collectLocalVault(userProfile, firebaseUser?.uid || sessionUid || 'local', firebaseUser?.email || undefined);
+    const blob = new Blob([JSON.stringify(vault, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `levelup-backup-${username || 'athlete'}-${today}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast('📦 Full JSON backup downloaded!', 'success');
+  };
+
+  const handleImportJSON = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const imported = JSON.parse(String(e.target?.result || '{}'));
+        const currentVault = collectLocalVault(userProfile, firebaseUser?.uid || sessionUid || 'local');
+        const merged = mergeVaults(currentVault, imported);
+        writeVaultToLocalStorage(merged);
+        if (merged.profile) {
+          setUsername(merged.profile.name);
+          setUserProfile(merged.profile);
+        }
+        setWorkoutData(sanitizeWorkoutData(merged.workoutData));
+        setPrs(merged.prs || {});
+        setSteps(merged.stepsHistory || {});
+        setWater(merged.waterHistory || {});
+        if (merged.xp !== undefined) setXp(merged.xp);
+        if (firebaseUser) {
+          await pushVaultToCloud(merged);
+        }
+        addToast('✅ Backup restored and merged without data loss!', 'success');
+      } catch {
+        addToast('⚠️ Invalid backup JSON file.', 'warning');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   // Theme & Gender Effect
   useEffect(() => {
@@ -974,12 +1141,14 @@ export default function App() {
   };
 
   const bottomTabs = [
-    { id: 'logs', label: 'Logs', icon: ClipboardList },
-    { id: 'stats', label: 'Dashboard', icon: Activity },
-    { id: 'mastery', label: 'Self-Mastery', icon: ShieldCheck },
-    { id: 'sessions', label: 'Sessions', icon: Home },
-    { id: 'charts', label: 'Earn Growth', icon: TrendingUp },
-    { id: 'planner', label: 'AI Planner', icon: Brain },
+    { id: 'stats', label: 'Home', icon: Activity },
+    { id: 'logs', label: 'Workout', icon: Dumbbell },
+    { id: 'nutrition', label: 'Nutrition', icon: Utensils },
+    { id: 'challenges', label: 'Winter Arc', icon: Trophy },
+    { id: 'sessions', label: 'Guides', icon: Home },
+    { id: 'charts', label: 'Analytics', icon: TrendingUp },
+    { id: 'planner', label: 'Planner', icon: Brain },
+    { id: 'mastery', label: 'Discipline', icon: ShieldCheck },
   ];
 
   const streak = calculateStreak(workoutData);
@@ -1072,6 +1241,9 @@ export default function App() {
               <div className="mt-8 flex gap-3">
                 <button
                   onClick={() => {
+                    if (updateDetails?.version) {
+                      localStorage.setItem('lv_dismissed_version', updateDetails.version);
+                    }
                     setIsUpdateDismissed(true);
                     setShowUpdateModal(false);
                     addToast("Update postponed. Finish your session!", "info");
@@ -1148,6 +1320,19 @@ export default function App() {
               </div>
             )}
             <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setShowSettingsModal(true)}
+                className={cn(
+                  "px-2.5 h-8 sm:h-9 rounded-xl border transition-all shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer text-[10px] font-black uppercase tracking-wider",
+                  firebaseUser
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:border-emerald-400"
+                    : "bg-[var(--card)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-white"
+                )}
+                title="Cloud Vault, Account & Macro Settings"
+              >
+                <Cloud size={14} className={syncStatus === 'syncing' ? 'animate-bounce' : ''} />
+                <span className="hidden md:inline">{firebaseUser ? 'Synced' : 'Cloud Backup'}</span>
+              </button>
               <button 
                 onClick={() => setShowNotificationSettings(true)}
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm relative group flex items-center justify-center shrink-0 cursor-pointer"
@@ -1269,7 +1454,78 @@ export default function App() {
         )}
 
         {activeTab === 'charts' && (
-          <MuscleProgressCharts data={workoutData} prs={prs} />
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-center">
+              <div className="bg-[var(--card2)] p-1.5 rounded-2xl border border-[var(--border)] flex gap-1.5 w-full max-w-md shadow-xl">
+                <button
+                  onClick={() => setChartsSubTab('muscle')}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer",
+                    chartsSubTab === 'muscle'
+                      ? "bg-[var(--accent)] text-white shadow-lg"
+                      : "text-[var(--muted)] hover:text-white"
+                  )}
+                >
+                  <TrendingUp size={14} /> Muscle Symmetry
+                </button>
+                <button
+                  onClick={() => setChartsSubTab('reports')}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer",
+                    chartsSubTab === 'reports'
+                      ? "bg-[var(--accent)] text-white shadow-lg"
+                      : "text-[var(--muted)] hover:text-white"
+                  )}
+                >
+                  <BarChart3 size={14} /> Reports & PDF
+                </button>
+              </div>
+            </div>
+            {chartsSubTab === 'muscle' ? (
+              <ErrorBoundary>
+                <MuscleProgressCharts data={workoutData} prs={prs} />
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary>
+                <AnalyticsAndReports
+                  profile={userProfile}
+                  workoutData={workoutData}
+                  prs={prs}
+                  sleepData={Object.values(sleep)}
+                  steps={steps[today] || 0}
+                  water={(water[today] || 0) * 250}
+                  settings={appSettings}
+                  triggerToast={(msg) => addToast(msg, 'info')}
+                />
+              </ErrorBoundary>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'nutrition' && (
+          <ErrorBoundary>
+            <NutritionTracker
+              profile={userProfile}
+              settings={appSettings}
+              triggerToast={(msg) => addToast(msg, 'success')}
+            />
+          </ErrorBoundary>
+        )}
+
+        {activeTab === 'challenges' && (
+          <ErrorBoundary>
+            <ChallengesView
+              profile={userProfile}
+              workoutData={workoutData}
+              prs={Object.entries(prs).map(([exercise, pr]) => ({ exercise, ...pr }))}
+              userXp={xp}
+              userLevel={currentLevel}
+              streak={streak}
+              onAddXp={handleAddXp}
+              triggerToast={(msg, type) => addToast(msg, type || 'info')}
+              onSelectTab={setActiveTab}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'planner' && (
@@ -1523,6 +1779,36 @@ export default function App() {
       </AnimatePresence>
 
       {/* Advanced Overlay Modals */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <SettingsAndAuthModal
+            onClose={() => setShowSettingsModal(false)}
+            profile={userProfile}
+            onUpdateProfile={(updated) => {
+              handleProfileUpdate(updated);
+              if (updated.name && updated.name !== username) {
+                handleSaveName(updated.name);
+              }
+            }}
+            settings={appSettings}
+            onUpdateSettings={(newSettings) => {
+              setAppSettings(newSettings);
+              if (username) {
+                localStorage.setItem(`lv_settings_${username}`, JSON.stringify(newSettings));
+              }
+            }}
+            firebaseUser={firebaseUser}
+            syncStatus={syncStatus}
+            lastSyncedAt={lastSyncedAt}
+            onManualSync={handleManualSync}
+            onExportJSON={handleExportJSON}
+            onImportJSON={handleImportJSON}
+            onForceCacheRefresh={forceUpdateApp}
+            triggerToast={(msg) => addToast(msg, 'info')}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showNotificationSettings && (
           <NotificationSettings 

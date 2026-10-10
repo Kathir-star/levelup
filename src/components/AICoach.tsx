@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { cn } from '../lib/utils';
 import { 
   Send, Bot, User, Mic, MicOff, Loader2, Sparkles, BrainCircuit,
   Dumbbell, Utensils, Flame, TrendingUp, Calendar, Zap, RefreshCw, 
-  Scale, ChevronRight, Apple, Info, ShieldCheck, ClipboardList, Clock, Brain
+  Scale, ChevronRight, Apple, Info, ShieldCheck, ClipboardList, Clock, Brain,
+  MessageSquare
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import AICoachRobot, { CoachRobotMode } from './AICoachRobot';
@@ -120,9 +120,22 @@ const PRESET_WORKOUTS: Record<string, any[]> = {
   ]
 };
 
+const QUICK_COACHING_CHIPS = [
+  "What workout should I do today?",
+  "How can I improve my workout?",
+  "What exercise can replace this exercise?",
+  "I missed yesterday's workout.",
+  "How should I progress this exercise?",
+  "Give me a beginner workout.",
+  "Give me a home workout.",
+  "Help me stay consistent.",
+  "Explain this exercise.",
+  "Create a weekly workout plan."
+];
+
 export default function AICoach({ userName, userProfile, workoutData }: AICoachProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: `vanakkam ${userName}! I'm your **LEVELUP** AI elite coach. I've analyzed your ${userProfile.gender || 'male'} profile. Let's optimize your ${userProfile.goal || 'fitness'} journey! How can I help you today? ⚡` }
+    { role: 'assistant', content: `Vanakkam ${userName}! I'm your **LEVELUP** AI Elite Coach. I've analyzed your profile and workout history. How can we level up your training or nutrition today? ⚡` }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -165,7 +178,7 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
     return profile.goal === 'loss' ? 11 : (profile.goal === 'gain' ? 17 : 14);
   });
 
-  // Keep synced with any localStorage updates (synchronized dynamically)
+  // Keep synced with any localStorage updates
   useEffect(() => {
     const handleStorageChange = () => {
       try {
@@ -192,47 +205,30 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // Also trigger on mount to make sure we have the latest
     handleStorageChange();
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Transition initial greeting back to idle after a delay
   useEffect(() => {
-    if (robotMode === 'greeting' && !isSpeaking) {
-      const timer = setTimeout(() => {
-        setRobotMode('idle');
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [robotMode, isSpeaking]);
+    const timer = setTimeout(() => setRobotMode('idle'), 3500);
+    return () => clearTimeout(timer);
+  }, []);
 
+  // Auto-scroll when messages update
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading, activeCoachTab]);
+  }, [messages, isLoading]);
 
-  useEffect(() => {
-    if (isLoading) {
-      setRobotMode('thinking');
-    } else if (isRecording) {
-      setRobotMode('listening');
-    } else if (isSpeaking) {
-      setRobotMode('greeting');
-    } else {
-      setRobotMode('idle');
-    }
-  }, [isLoading, isRecording, isSpeaking]);
-
-  // Calorie & dynamic macros calculations
-  const sakthiCalories = Math.round((profile.weight || 75) * 2.2 * sakthiMultiplier);
-  const proteinGrams = Math.round((profile.weight || 75) * 2.2);
+  const weightLbs = (profile.weight || 75) * 2.20462;
+  const sakthiCalories = Math.round(weightLbs * sakthiMultiplier);
+  const proteinGrams = Math.round(profile.weight * 2.0); // 2g per kg
   const proteinCalories = proteinGrams * 4;
-  const fatCalories = Math.round(sakthiCalories * 0.22);
+  const fatCalories = Math.round(sakthiCalories * 0.25);
   const fatGrams = Math.round(fatCalories / 9);
-  const remainingCalories = sakthiCalories - proteinCalories - fatCalories;
-  const carbGrams = Math.max(20, Math.round(remainingCalories / 4));
+  const carbCalories = Math.max(0, sakthiCalories - (proteinCalories + fatCalories));
+  const carbGrams = Math.round(carbCalories / 4);
 
   const mealCalculations = {
     breakfast: {
@@ -240,12 +236,12 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
       prot: Math.round(proteinGrams * 0.25),
       carbs: Math.round(carbGrams * 0.25),
       fats: Math.round(fatGrams * 0.25),
-      time: "08:30 AM",
+      time: "08:00 AM",
       recommendations: profile.goal === 'loss' 
-        ? ["3 Whole Eggs boiled", "60g dry Oats cooked in water", "1 medium Banana", "10 Almonds"]
+        ? ["4 Whole Eggs boiled or scrambled with spinach", "1 Slice Whole Wheat Toast", "Black Coffee / Green Tea"]
         : profile.goal === 'gain'
-        ? ["4 Whole Eggs scrambled", "80g dry Oats in double toned milk", "1 large Banana", "15 Cashews"]
-        : ["3 Whole Eggs scrambled", "70g dry Oats cooked in half-milk half-water", "1 medium Banana", "12 Almonds"]
+        ? ["4 Whole Eggs + 2 Egg Whites", "2 Slices Whole Wheat Toast with Peanut Butter", "1 Banana", "250ml Milk"]
+        : ["3 Whole Eggs with vegetables", "1.5 Slices Toast", "1 cup warm Milk or Chai (low sugar)"]
     },
     lunch: {
       cals: Math.round(sakthiCalories * 0.35),
@@ -254,9 +250,9 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
       fats: Math.round(fatGrams * 0.35),
       time: "01:30 PM",
       recommendations: profile.goal === 'loss'
-        ? ["150g raw weighed White Rice cooked", "150g Skinless Chicken Breast or 150g Grilled Tofu", "150g Fresh Curd / Yogurt", "Salad bowl"]
+        ? ["120g raw weighed White Rice / 2 Wheat Roti", "200g Skinless Chicken Breast or 200g Paneer/Tofu", "1 bowl Cucumber Tomato Salad", "1 cup Dal"]
         : profile.goal === 'gain'
-        ? ["200g raw weighed White Rice cooked", "200g Skinless Chicken Breast or 200g Paneer/Soy Chunks", "200g Fresh Curd with 1 tsp Desi Ghee", "Salad"]
+        ? ["220g raw weighed White Basmati Rice", "220g Chicken Breast / Mutton / Soya chunks curry", "150g Curd (Dahi)", "Generous mixed veggies"]
         : ["170g raw weighed White Rice cooked", "170g Skinless Chicken Breast or 170g Grilled Tofu/Paneer", "170g Fresh Curd", "Mixed salad"]
     },
     snack: {
@@ -300,66 +296,58 @@ export default function AICoach({ userName, userProfile, workoutData }: AICoachP
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
       const isTamil = document.documentElement.dataset.tamil === 'true';
-      const tamilConstraint = isTamil 
-        ? "\n8. TAMIL MODE ENABLED: Interject Tamil punchlines in Roman script (e.g., 'Idhu gym illa da… battlefield!', 'Na ready... nee ready ah?', 'Veri kondu aadu!', 'Semma mass panni vidu'). Use these naturally. Keep core advice in English but wrap it in heavy Tamil mass-style motivation."
-        : "";
+      const storedXp = parseInt(localStorage.getItem('user-xp') || '0');
+      const storedWinterArc = localStorage.getItem('lvl_winter_arc');
+      const winterArcData = storedWinterArc ? JSON.parse(storedWinterArc) : null;
+      const storedPrs = localStorage.getItem('prs');
+      const prsData = storedPrs ? JSON.parse(storedPrs) : [];
 
-      // Format recent workout activity if available
-      let recentActivityContext = "No recent workouts logged.";
-      if (workoutData && Object.keys(workoutData).length > 0) {
-        const sortedDates = Object.keys(workoutData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-        const recentDate = sortedDates[0];
-        const recentWorkouts = workoutData[recentDate];
-        const musclesWorked = Array.from(new Set(recentWorkouts.map((w: any) => w.muscle))).join(', ');
-        recentActivityContext = `Recent Workout on ${recentDate}: Focused on ${musclesWorked}.`;
+      const payload = {
+        message: finalMsg,
+        history: messages.slice(-6),
+        context: {
+          name: userName || profile.name || 'Champion',
+          gender: profile.gender || 'male',
+          goal: profile.goal || 'Fitness & Muscle Building',
+          level: profile.level || 'Intermediate',
+          weight: profile.weight || 75,
+          height: profile.height || 175,
+          xp: storedXp,
+          streak: parseInt(localStorage.getItem('lvl_best_streak') || '1'),
+          winterArc: winterArcData,
+          personalRecords: prsData,
+          recentWorkouts: workoutData ? Object.keys(workoutData).slice(-3).map(d => ({ date: d, exercises: workoutData[d] })) : [],
+          isTamil: isTamil
+        }
+      };
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
       }
 
-      const systemPrompt = `You are LEVELUP – an elite Indian Personal Trainer & Nutrition Expert. 
-User Context: Name=${userName}, Gender=${userProfile.gender || 'male'}, Goal=${userProfile.goal || 'maintain'}, Weight=${userProfile.weight || 'unknown'}kg.
-Recent Activity: ${recentActivityContext}
-
-MISSION:
-1. Provide ultra-precise fitness advice tailored to ${userName}'s profile and recent activity.
-2. Structure workouts (Push/Pull/Legs, Upper/Lower, etc.) with sets/reps/rest. If generating a plan, consider what muscles they recently worked so they don't overtrain.
-3. Track nutrition—especially Indian meals (Biryani, Poha, Roti, etc.)—and estimate macros.
-4. If the user mentions gender or theme, acknowledge it (Male=Red/Strong vibe, Female=Pink/Purple/Flow vibe).
-5. MEN'S DISCIPLINE & SELF-MASTERY SUPPORT: If the user mentions struggling, scrolling addictions, toxic media, or lapses in self-control, act as a compassionate, non-shaming behavioral mentor. Validate their challenges, focus on small wins, provide constructive habits to trigger instead (such as simple physical work, reading, or box breathing), and guide them with high-respect encouragement.
-6. Always address the user as ${userName}.
-7. Use professional formatting: bold headings, tables for workouts/diet, and bullet points.
-8. Tone: High-energy, knowledgeable, motivating, supportive, respectful, and disciplined.${tamilConstraint}
-
-FORMATTING (CRITICAL):
-- You MUST use Markdown tables to present ALL workout plans (Columns: Exercise | Sets | Reps | Rest).
-- You MUST use Markdown tables to present ALL diet/meal plans (Columns: Meal | Food | Calories | Protein).
-- Use **bold headings** for different sections.
-- Keep responses concise, structured, and information-dense.
-- Always end with a short motivational punchline using the user's name!`;
-
-      const chat = ai.chats.create({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: systemPrompt,
-        },
-      });
-
-      const result = await chat.sendMessage({
-        message: finalMsg
-      });
+      const data = await response.json();
+      const reply = data.content || data.response || "Mission acknowledged. Let's conquer today's training session!";
       
-      const text = result.text;
-      setMessages(prev => [...prev, { role: 'assistant', content: text || "Mission accomplished! Keep the fire burning!" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       
-      // Trigger voice waves / speaking companion animation
       setIsSpeaking(true);
-      setTimeout(() => {
-        setIsSpeaking(false);
-      }, 7000);
+      setTimeout(() => setIsSpeaking(false), 5000);
     } catch (error) {
-      console.error('AI Coach Error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Champion, my uplink is shaky! But discipline doesn't need a connection. Keep up the intensity and retry in a moment!" }]);
+      console.error('AI Coach Chat Error:', error);
+      setMessages(prev => [
+        ...prev, 
+        { 
+          role: 'assistant', 
+          content: "⚠️ **AI Coach is running in offline mode.** Your workout history is safe. Focus on clean reps, full range of motion, and proper recovery!" 
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -398,17 +386,17 @@ FORMATTING (CRITICAL):
   return (
     <div className="w-full h-full flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 bg-[var(--bg)]">
       {/* AI Header */}
-      <div className="p-5 border-b border-[var(--border)] bg-[var(--card2)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-[var(--border)] bg-[var(--card2)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-14 h-14 bg-gradient-to-br from-white/5 to-white/10 rounded-2xl flex items-center justify-center relative group border border-white/10 overflow-visible shrink-0">
-            <AICoachRobot mode={robotMode} size={56} />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-white/5 to-white/10 rounded-2xl flex items-center justify-center relative group border border-white/10 overflow-visible shrink-0">
+            <AICoachRobot mode={robotMode} size={50} />
             <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[var(--green)] rounded-full border-2 border-black" />
           </div>
           <div>
-            <h3 className="tab-heading text-base leading-none">LEVELUP AI Companion</h3>
+            <h3 className="tab-heading text-base leading-none">LEVELUP AI Elite Coach</h3>
             <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
               <Sparkles size={9} className="text-[var(--yellow)] animate-pulse" />
-              Elite Personalized Intelligence
+              Real-time Strength & Nutrition Intelligence
             </p>
           </div>
         </div>
@@ -419,7 +407,7 @@ FORMATTING (CRITICAL):
       </div>
 
       {/* Segmented Controller Tab Switcher */}
-      <div className="px-5 py-2.5 border-b border-[var(--border)] bg-[var(--card2)]/50 flex justify-center">
+      <div className="px-4 py-2 border-b border-[var(--border)] bg-[var(--card2)]/50 flex justify-center">
         <div className="bg-neutral-900/80 p-1 rounded-xl border border-white/5 w-full max-w-md flex">
           <button
             id="coach-tab-chat"
@@ -456,12 +444,12 @@ FORMATTING (CRITICAL):
           {/* Chat Space */}
           <div 
             ref={scrollRef} 
-            className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-black/20"
+            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-black/20"
           >
             {messages.map((m, i) => (
               <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-300", m.role === 'user' ? "justify-end" : "justify-start")}>
                 <div className={cn(
-                  "max-w-[85%] sm:max-w-[75%] p-5 rounded-3xl text-sm leading-relaxed",
+                  "max-w-[90%] sm:max-w-[80%] p-4 sm:p-5 rounded-2xl text-xs sm:text-sm leading-relaxed",
                   m.role === 'user' 
                     ? "bg-[var(--accent)] text-white rounded-br-none shadow-xl shadow-[var(--accent-glow)]/10" 
                     : "bg-[var(--card)] text-white border border-[var(--border)] rounded-bl-none shadow-sm"
@@ -474,55 +462,45 @@ FORMATTING (CRITICAL):
             ))}
             {isLoading && (
               <div className="flex justify-start animate-pulse">
-                <div className="bg-[var(--card)] border border-[var(--border)] p-5 rounded-3xl rounded-bl-none shadow-sm flex items-center gap-3 text-[var(--muted)] text-xs font-black uppercase tracking-widest">
+                <div className="bg-[var(--card)] border border-[var(--border)] p-4 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-3 text-[var(--muted)] text-xs font-black uppercase tracking-widest">
                   <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
-                  Coach Calculating...
+                  Coach Generating Strategy...
                 </div>
               </div>
             )}
           </div>
 
-          {/* Suggested Actions */}
-          {messages.length <= 2 && !isLoading && (
-            <div className="px-6 flex flex-wrap gap-2 justify-center -mb-2 mt-2 relative z-10">
-              <button 
-                id="suggested-action-workout"
-                onClick={() => {
-                   const tamil = document.documentElement.dataset.tamil === 'true';
-                   handleSend(tamil ? 'Enakku oru nalla personalized workout plan kodu.' : 'Generate a personalized workout plan based on my profile.');
-                }}
-                className="px-4 py-2 bg-[var(--card)] border border-[var(--accent)] text-[var(--accent)] text-[11px] font-bold uppercase tracking-wider rounded-full hover:bg-[var(--accent)] hover:text-white transition-all shadow-sm cursor-pointer"
+          {/* Quick Coaching Action Chips (Horizontal Scrollable) */}
+          <div className="px-4 py-2 border-t border-white/5 bg-black/40 overflow-x-auto no-scrollbar flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-500 shrink-0 flex items-center gap-1">
+              <MessageSquare size={10} /> Quick Ask:
+            </span>
+            {QUICK_COACHING_CHIPS.map((chip, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(chip)}
+                className="shrink-0 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-[10px] font-medium tracking-wide transition-all cursor-pointer whitespace-nowrap active:scale-95"
               >
-                Workout Plan
+                {chip}
               </button>
-              <button 
-                id="suggested-action-diet"
-                onClick={() => {
-                   const tamil = document.documentElement.dataset.tamil === 'true';
-                   handleSend(tamil ? 'Oru high-protein Indian diet plan suggest pannu.' : 'Suggest a high-protein Indian diet plan.');
-                }}
-                className="px-4 py-2 bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] text-[11px] font-bold uppercase tracking-wider rounded-full hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm cursor-pointer"
-              >
-                Diet Plan
-              </button>
-            </div>
-          )}
+            ))}
+          </div>
 
           {/* Input Zone */}
-          <div className="p-6 bg-[var(--card2)] border-t border-[var(--border)]">
-            <div className="flex gap-3 items-center max-w-3xl mx-auto">
+          <div className="p-4 sm:p-5 bg-[var(--card2)] border-t border-[var(--border)]">
+            <div className="flex gap-2 sm:gap-3 items-center max-w-3xl mx-auto">
               <button 
                 id="mic-voice-toggle"
                 onClick={toggleVoiceChat}
                 className={cn(
-                  "w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all group shrink-0 cursor-pointer",
+                  "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 flex items-center justify-center transition-all group shrink-0 cursor-pointer",
                   isRecording 
                     ? "bg-[#1a0000] border-[var(--red)] text-[var(--red)] shadow-[0_0_20px_var(--red)] animate-pulse" 
                     : "bg-[var(--sub)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 )}
                 title="Voice Input"
               >
-                {isRecording ? <Mic size={24} /> : <MicOff size={24} className="group-hover:scale-110 transition-transform" />}
+                {isRecording ? <Mic size={20} /> : <MicOff size={20} className="group-hover:scale-110 transition-transform" />}
               </button>
               
               <div className="flex-1 relative">
@@ -531,21 +509,21 @@ FORMATTING (CRITICAL):
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Track meal, plan workout, or ask for advice..." 
-                  className="w-full h-14 pl-5 pr-14 rounded-2xl bg-[var(--sub)] border border-[var(--border)] text-white text-sm outline-none focus:border-[var(--accent)] transition-all font-medium placeholder:text-white/20"
+                  placeholder="Ask for workout split, substitute exercise, or diet advice..." 
+                  className="w-full h-12 sm:h-14 pl-4 sm:pl-5 pr-12 sm:pr-14 rounded-2xl bg-[var(--sub)] border border-[var(--border)] text-white text-xs sm:text-sm outline-none focus:border-[var(--accent)] transition-all font-medium placeholder:text-white/20"
                 />
                 <button 
                   id="send-message-btn"
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-[var(--accent)] text-white flex items-center justify-center shadow-lg shadow-[var(--accent-glow)]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 cursor-pointer"
+                  className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--accent)] text-white flex items-center justify-center shadow-lg shadow-[var(--accent-glow)]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 cursor-pointer"
                 >
-                  <Send size={18} className="translate-x-0.5" />
+                  <Send size={16} className="translate-x-0.5" />
                 </button>
               </div>
             </div>
             {isRecording && (
-              <div className="text-[10px] text-[var(--red)] font-black uppercase tracking-[0.3em] text-center mt-3 animate-pulse">
+              <div className="text-[10px] text-[var(--red)] font-black uppercase tracking-[0.3em] text-center mt-2 animate-pulse">
                  Neural Link Syncing... Speak Clear
               </div>
             )}
@@ -553,7 +531,7 @@ FORMATTING (CRITICAL):
         </>
       ) : (
         /* Plan Summary View */
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-black/30">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-black/30">
           
           {/* Active Fitness Profile Card */}
           <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-white/5 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -587,7 +565,7 @@ FORMATTING (CRITICAL):
           <div className="bg-neutral-900/50 p-4 rounded-xl border border-white/5 flex items-start gap-3">
             <Info size={16} className="text-[var(--accent)] mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--muted)] leading-relaxed">
-              Below is your <strong className="text-white">live generated split & diet profile</strong>. This overview synchronizes instantly when you adjust your targets in the <strong className="text-white">🏋️ LevelUp Strategist (Planner)</strong> tab. Use this to easily check targets.
+              Below is your <strong className="text-white">live generated split & diet profile</strong>. This overview synchronizes instantly when you adjust your targets in the <strong className="text-white">🏋️ LevelUp Strategist (Planner)</strong> tab.
             </p>
           </div>
 

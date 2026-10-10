@@ -14,13 +14,9 @@ export default defineConfig({
     dedupe: ['react', 'react-dom']
   },
   server: {
-    host: true,
+    host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    hmr: process.env.DISABLE_HMR === 'true' ? false : {
-      protocol: 'wss',
-      host: 'ais-dev-abpyzgtehgloftmrbpss3v-708515236167.asia-east1.run.app',
-      clientPort: 443
-    }
+    hmr: process.env.DISABLE_HMR === 'true' ? false : undefined
   }
 });
